@@ -66,7 +66,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bar .msg{flex-basis:100%;font-size:13px;color:#ffc6c9;margin:0}
 .bar .msg:empty{display:none}
 .roster{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}
-.roster .chip{background:rgb(255 255 255 / .09);border-radius:6px;padding:2px 8px}
+.roster .chip{background:rgb(255 255 255 / .09);border:1px solid transparent;color:inherit;font:inherit;border-radius:6px;padding:2px 8px;cursor:pointer}
+.roster .chip:hover{border-color:rgb(255 255 255 / .4)}
+.roster .chip.sel{background:var(--red);color:#fff}
 .roster .chip b{font-weight:600}
 .tabs{display:flex;gap:4px}
 .tab{background:transparent;border:0;color:var(--bar-fg);opacity:.6;padding:4px 8px;border-bottom:2px solid transparent;font-size:13.5px}
@@ -232,6 +234,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ed-opt .ed-img{display:contents}
 .savebtn{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:4px;padding:4px 12px;font-family:var(--f-ui);font-size:13px;font-weight:600}
 .savebtn:disabled{opacity:.6;cursor:wait}
+.save-row{display:flex;justify-content:flex-end;margin-top:6px}
 .capture{position:fixed;left:-12000px;top:0;width:1000px;padding:20px;background:var(--desk);pointer-events:none}
 .capture>.stack{margin:0;max-width:none}
 .force-wide .sheet{padding:28px 44px 20px}
@@ -546,7 +549,7 @@ async function saveSheetImage(btn){
     const oi=src.querySelectorAll('input'), ci=clone.querySelectorAll('input');
     oi.forEach((el,i)=>{ if(ci[i]){ ci[i].setAttribute('value',el.value); ci[i].value=el.value; } });
     clone.querySelectorAll('.reveal').forEach(e=>e.classList.remove('reveal'));
-    clone.querySelectorAll('.login,.savebtn,.viewing,.linkbtn,canvas').forEach(e=>e.remove());
+    clone.querySelectorAll('.login,.save-row,.viewing,.linkbtn,canvas,.game-foot').forEach(e=>e.remove());
     wrap=document.createElement('div'); wrap.className='capture force-wide';
     wrap.appendChild(clone); document.body.appendChild(wrap);
     try{ await document.fonts.ready; }catch(e){}
@@ -580,6 +583,7 @@ function showSaved(blob){
   document.body.appendChild(ov);
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('#save-sheet'); if(b) saveSheetImage(b); });
+document.addEventListener('click',e=>{ const v=e.target.closest('#sheet [data-view]'); if(!v) return; S.viewPid=v.dataset.view; render(); });
 
 /* ---------------- host login ---------------- */
 function loginBox(){
@@ -623,14 +627,16 @@ function renderBar(){
     const src = S.results?.entries || mergedEntries();
     const list = Object.entries(src);
     const nQ = S.quiz.questions.length;
-    roster = `<div class="roster"><span>응시자 ${list.length}명</span>`+ list.slice(0,60).map(([id,e])=>{
+    roster = `<div class="roster"><span>응시자 ${list.length}명 · 이름을 누르면 답안지를 볼 수 있어요</span>`+ list.slice(0,60).map(([id,e])=>{
       const done = S.quiz.questions.filter(q=>answered(e,q)).length;
-      return `<span class="chip"><b>${esc(e.nick)}</b> ${e.score!==undefined?e.score+'점':done+'/'+nQ}</span>`;
+      return `<button class="chip ${S.viewPid===id?'sel':''}" data-pid="${esc(id)}" title="${esc(e.nick)}의 답안지 보기"><b>${esc(e.nick)}</b> ${e.score!==undefined?e.score+'점':done+'/'+nQ}</button>`;
     }).join('') + (list.length>60?`<span class="chip">외 ${list.length-60}명</span>`:'') + `</div>`;
   }
   el.innerHTML=`<div class="bar"><span class="who">감독관${S.local?' · 미리보기 (저장 안 됨)':' · '+esc(S.hostEmail)}</span><div class="steps">${steps}</div>${tabs}<div class="acts">${acts}</div>${S.local?b('asviewer','시청자 화면 보기'):b('logout','로그아웃')}<p class="msg">${esc(S.hostMsg)}</p>${roster}</div>`;
 }
 $('#hostbar').addEventListener('click',e=>{
+  const c=e.target.closest('[data-pid]');
+  if(c){ S.viewPid = S.viewPid===c.dataset.pid ? null : c.dataset.pid; render(); $('#sheet').scrollIntoView({behavior:'smooth',block:'start'}); return; }
   if(e.target.closest('[data-act="ashost"]')){ S.isHost=true; render(); return; }
   const a=e.target.closest('[data-act]'); if(a){ a.disabled=true; hostAction(a.dataset.act).then(()=>{}); return; }
   const t=e.target.closest('[data-tab]'); if(t){ S.hostTab=t.dataset.tab; render(); }
@@ -642,19 +648,27 @@ function examId(){
 }
 
 function viewedEntry(){
-  const r=S.results; if(!r) return null;
-  const id=S.viewPid ?? (r.entries?.[S.me] ? S.me : null);
-  return id && r.entries?.[id] ? {id,...r.entries[id]} : null;
+  const src = S.results?.entries || (S.isHost && S.quiz?.phase!=='draft' ? mergedEntries() : null);
+  if(!src) return null;
+  const id=S.viewPid ?? (!S.isHost && src[S.me] ? S.me : null);
+  return id && src[id] ? {id,...src[id]} : null;
+}
+function hostViewing(){
+  const ph=S.quiz?.phase;
+  if(!S.isHost || (ph!=='open' && ph!=='closed')) return '';
+  const e=viewedEntry();
+  return e ? `<div class="viewing"><span>지금 보는 답안지: <b>${esc(e.nick)}</b>${ph==='open'?' (실시간)':''}</span> <button class="linkbtn" data-view="__key">정답지로 돌아가기</button></div>`
+           : `<div class="viewing"><span>위쪽 감독관 바에서 응시자 이름을 누르면 그 사람의 답안지를 볼 수 있어요.</span></div>`;
 }
 
 function header(){
   const q=S.quiz; const ph=q?.phase;
   const graded = ph==='graded' && S.results?.graded;
-  const ent = graded ? viewedEntry() : null;
+  const ent = (graded || (S.isHost && ph!=='draft')) ? viewedEntry() : null;
   const hostView = S.isHost;
   const nickVal = ent ? ent.nick : (hostView ? '감독관' : S.nick);
   const nickDisabled = hostView || ent || ph!=='open' && ph!=='draft' ? 'disabled' : '';
-  const scoreHtml = ent ? `<div class="scorebox"><span class="lbl">점수</span><span class="score" style="--n:${q.questions.length}">${ent.score}<small>/${S.results.total}</small></span></div>` : '';
+  const scoreHtml = ent && ent.score!==undefined ? `<div class="scorebox"><span class="lbl">점수</span><span class="score" style="--n:${q.questions.length}">${ent.score}<small>/${S.results.total}</small></span></div>` : '';
   return `<header>
     <div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div>
     <div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">${esc(q?.title||'빼빼로 영역')}</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div>
@@ -664,6 +678,7 @@ function header(){
       ${scoreHtml}
     </div>
     ${statusLine()}
+    ${ph && ph!=='draft' ? `<div class="save-row"><button class="savebtn" id="save-sheet">${S.isHost?'시험지 사진으로 저장':'답안지 사진으로 저장'}</button></div>` : ''}
   </header>`;
 }
 
@@ -682,7 +697,6 @@ function statusLine(){
   }
   if(ph==='closed') t='<b>답안이 마감되었습니다.</b> 채점을 기다리는 중이에요.';
   if(ph==='graded') t= S.results?.entries?.[S.me] ? '채점이 끝났습니다.' : '채점이 끝났습니다. 아래 성적표에서 다른 응시자의 답안지를 볼 수 있어요.';
-  if((ph==='closed'||ph==='graded') && (S.results?.entries?.[S.me] || viewedEntry())) t+=` <button class="savebtn" id="save-sheet">답안지 사진으로 저장</button>`;
   return `<div class="status" id="status">${t}</div>`;
 }
 function statusUpdate(){ const s=$('#status'); if(s){ const tmp=document.createElement('div'); tmp.innerHTML=statusLine(); s.replaceWith(tmp.firstElementChild||document.createTextNode('')); } }
@@ -726,7 +740,7 @@ function renderSheetInner(){
   let html='';
   for(let pg=0; pg<pages; pg++){
     const n=Math.min(PER_PAGE, all.length-pg*PER_PAGE);
-    const top = pg===0 ? header()+ranking() : `<div class="page-head"><span>제 1 교시</span><b>${esc(q.title||'빼빼로 영역')}</b><span class="form-type">홀수형</span></div>`;
+    const top = pg===0 ? header()+ranking()+hostViewing() : `<div class="page-head"><span>제 1 교시</span><b>${esc(q.title||'빼빼로 영역')}</b><span class="form-type">홀수형</span></div>`;
     html += sheet(top + `<div class="qs ${S.reveal?'reveal':''}" data-pg="${pg}" style="--rows:${Math.max(1,Math.ceil(n/2))}"></div>` + footer(pg+1, pg===pages-1));
   }
   sh.innerHTML=html;
@@ -741,7 +755,7 @@ function bindHeader(){
   const n=$('#nick'); if(!n||n.disabled) return;
   n.addEventListener('input',()=>{ const had=!!S.nick; S.nick=n.value.trim(); ls.set('pp-nick',S.nick); if(had!==!!S.nick) render(); else statusUpdate(); });
   n.addEventListener('change',()=>{ if(S.quiz?.phase==='open' && S.nick){ pushAnswers(); } });
-  $('#sheet').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{ S.viewPid=b.dataset.view==='__key'?'__key':b.dataset.view; render(); });
+
 }
 
 /* 지문 꾸미기: 첫 문단은 굵게, <조건>/<힌트> 문단은 색 다른 한 줄, 나머지 문단은 지문 상자 */
@@ -776,7 +790,7 @@ function fmtQ(text, ptsHtml){
 function questionEl(q,i){
   const ph=S.quiz.phase; const r=S.results;
   const graded = ph==='graded' && r?.graded;
-  const ent = (ph==='closed'||graded) ? viewedEntry() : null;
+  const ent = (ph==='closed'||graded||(S.isHost && ph==='open')) ? viewedEntry() : null;
   const host=S.isHost;
   const key = graded ? r.key : (host ? S.key : {});
   // whose answers to show
@@ -824,7 +838,7 @@ function questionEl(q,i){
   } else {
     const g=GAMES[q.game]||GAMES.catch;
     const best = gm[q.id];
-    if(ph==='closed'||graded){
+    if(ph==='closed'||graded||ent){
       const d=document.createElement('div'); d.className='game-res';
       if(host && !ent){ const src=r?.entries||{}; const vals=Object.values(src).map(e=>e.gm?.[q.id]).filter(v=>v!==undefined); const pass=vals.filter(v=>v>=q.target).length; d.textContent=`${g.name} · 목표 ${q.target}${g.unit} · 달성 ${pass}명 / 기록 제출 ${vals.length}명`; }
       else d.innerHTML=`${g.name} · 목표 <b>${q.target}${g.unit}</b> · ${ent||ph==='closed'?`기록 <b>${best??'없음'}${best!==undefined?g.unit:''}</b>`:'정답지에는 기록이 없어요'}`;
