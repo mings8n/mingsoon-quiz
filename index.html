@@ -72,7 +72,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tab.on{opacity:1;border-bottom-color:var(--red)}
 
 /* ---------- sheet ---------- */
-.sheet{max-width:960px;margin:16px auto 0;background:var(--paper);border:1px solid var(--faint);box-shadow:0 1px 0 var(--faint),0 18px 40px -24px rgb(40 20 25 / .35);padding:28px clamp(16px,4vw,44px) 20px;position:relative}
+.stack{max-width:960px;margin:16px auto 0;display:grid;gap:28px}
+.sheet{width:100%;margin:0;background:var(--paper);border:1px solid var(--faint);box-shadow:0 1px 0 var(--faint),0 18px 40px -24px rgb(40 20 25 / .35);padding:28px clamp(16px,4vw,44px) 20px;position:relative}
 .head-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;font-family:var(--f-ui);font-size:13px;color:var(--ink-2);flex-wrap:wrap}
 .form-type{border:1.5px solid var(--rule);padding:2px 10px;font-weight:600;color:var(--ink);font-family:var(--f-display)}
 .head-title{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;border-top:3px double var(--rule);border-bottom:1.5px solid var(--rule);margin-top:8px;padding:14px 0}
@@ -116,7 +117,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 /* questions */
 .qs{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;margin-top:22px}
-@media (min-width:860px){.qs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px;background:linear-gradient(var(--rule),var(--rule)) center top/1px 100% no-repeat}}
+@media (min-width:860px){.qs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(var(--rows,3),auto);grid-auto-flow:column;column-gap:56px;row-gap:36px;background:linear-gradient(var(--rule),var(--rule)) center top/1px 100% no-repeat}}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:3px double var(--rule);padding-bottom:8px;font-family:var(--f-ui);font-size:13px;color:var(--ink-2)}
+.page-head b{font-family:var(--f-display);font-weight:800;font-size:18px;color:var(--ink);letter-spacing:.12em}
 .q{position:relative;min-width:0}
 .q-line{display:flex;gap:8px;align-items:baseline}
 .q-num{font-family:var(--f-display);font-weight:800;font-size:19px;position:relative;flex:none;min-width:30px}
@@ -225,7 +228,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 </head>
 <body>
 <div id="hostbar"></div>
-<main class="sheet" id="sheet">
+<main class="stack" id="sheet">
   <div class="empty"><h2>시험지를 불러오는 중…</h2></div>
 </main>
 
@@ -622,21 +625,30 @@ function renderSheet(){
   renderSheetInner();
   if(fid){ const n=document.getElementById(fid); if(n && n!==ae && !n.disabled){ n.focus({preventScroll:true}); try{ if(sel) n.setSelectionRange(sel[0],sel[1]); }catch(e){} } }
 }
+const PER_PAGE=6;
+const sheet = inner => `<section class="sheet">${inner}</section>`;
 function renderSheetInner(){
   const sh=$('#sheet');
-  if(S.loading){ sh.innerHTML=`<div class="empty"><h2>시험지를 불러오는 중…</h2>${S.slow?'<p>연결이 늦어지고 있어요. 잠시만 기다려 주세요.</p>':''}</div>`; return; }
-  if(S.fatal){ sh.innerHTML=header0()+`<div class="empty"><h2>연결 설정을 확인해 주세요</h2><p>${esc(S.fatal)}</p></div>`; return; }
+  if(S.loading){ sh.innerHTML=sheet(`<div class="empty"><h2>시험지를 불러오는 중…</h2>${S.slow?'<p>연결이 늦어지고 있어요. 잠시만 기다려 주세요.</p>':''}</div>`); return; }
+  if(S.fatal){ sh.innerHTML=sheet(header0()+`<div class="empty"><h2>연결 설정을 확인해 주세요</h2><p>${esc(S.fatal)}</p></div>`); return; }
   const q=S.quiz;
-  if(!q){ sh.innerHTML=header0()+`<div class="empty"><h2>아직 시험지가 배부되지 않았습니다</h2><p>감독관이 시험을 시작하면 이 화면에 문제가 나타나요.</p></div>`+footer(); return; }
-  if(!S.isHost && q.phase==='draft'){ sh.innerHTML=header()+`<div class="empty"><h2>시험 시작 전입니다</h2><p>성명란에 닉네임을 적고 기다려 주세요. 감독관이 시험을 시작하면 문제가 나타나요.</p></div>`+footer(); bindHeader(); return; }
-  if(S.isHost && q.phase==='draft' && S.hostTab==='edit'){ sh.innerHTML=header()+editor()+footer(); bindHeader(); bindEditor(); return; }
-  sh.innerHTML = header() + ranking() + `<div class="qs ${S.reveal?'reveal':''}" id="qs"></div>` + footer();
-  const qs=$('#qs'); q.questions.forEach((qq,i)=>qs.appendChild(questionEl(qq,i)));
+  if(!q){ sh.innerHTML=sheet(header0()+`<div class="empty"><h2>아직 시험지가 배부되지 않았습니다</h2><p>감독관이 시험을 시작하면 이 화면에 문제가 나타나요.</p></div>`+footer()); return; }
+  if(!S.isHost && q.phase==='draft'){ sh.innerHTML=sheet(header()+`<div class="empty"><h2>시험 시작 전입니다</h2><p>성명란에 닉네임을 적고 기다려 주세요. 감독관이 시험을 시작하면 문제가 나타나요.</p></div>`+footer()); bindHeader(); return; }
+  if(S.isHost && q.phase==='draft' && S.hostTab==='edit'){ sh.innerHTML=sheet(header()+editor()+footer()); bindHeader(); bindEditor(); return; }
+  const all=q.questions; const pages=Math.max(1,Math.ceil(all.length/PER_PAGE));
+  let html='';
+  for(let pg=0; pg<pages; pg++){
+    const n=Math.min(PER_PAGE, all.length-pg*PER_PAGE);
+    const top = pg===0 ? header()+ranking() : `<div class="page-head"><span>제 1 교시</span><b>${esc(q.title||'빼빼로 영역')}</b><span class="form-type">홀수형</span></div>`;
+    html += sheet(top + `<div class="qs ${S.reveal?'reveal':''}" data-pg="${pg}" style="--rows:${Math.max(1,Math.ceil(n/2))}"></div>` + footer(pg+1, pg===pages-1));
+  }
+  sh.innerHTML=html;
+  all.forEach((qq,i)=>{ $(`.qs[data-pg="${Math.floor(i/PER_PAGE)}"]`).appendChild(questionEl(qq,i)); });
   bindHeader();
   S.reveal=false;
 }
 function header0(){ return `<header><div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div><div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">빼빼로 영역</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div></header>`; }
-function footer(){ return loginBox()+`<div class="foot"><span>이 문제지에 관한 저작권은 빼빼로데이 출제위원회에 있습니다.</span><span class="pageno">1</span><span>11월 11일 시행</span></div>`; }
+function footer(n=1,last=true){ return (last?loginBox():'')+`<div class="foot"><span>이 문제지에 관한 저작권은 밍쑨이에게 있습니다.</span><span class="pageno">${n}</span><span>11월 11일 시행</span></div>`; }
 
 function bindHeader(){
   const n=$('#nick'); if(!n||n.disabled) return;
