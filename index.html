@@ -6,7 +6,8 @@
 <title>빼빼로데이 모의고사</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Pen+Script&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* Layout: a Korean 수능-style exam sheet on a desk — header band with 교시/영역, two-column question grid split by a hairline, red-pen grading on top. */
 :root{
@@ -24,9 +25,9 @@
   --ok:#1f7a4a;
   --bar:#231d1f;
   --bar-fg:#f6efef;
-  --f-display:"Nanum Myeongjo","Noto Serif KR","Batang",serif;
-  --f-body:"Nanum Myeongjo","Noto Serif KR","Batang",serif;
-  --f-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-display:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-body:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-ui:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-hand:"Nanum Pen Script","Apple SD Gothic Neo",cursive;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -51,9 +52,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bar{background:var(--bar);color:var(--bar-fg);font-family:var(--f-ui);font-size:14px;border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;box-shadow:0 6px 18px rgb(0 0 0 / .18)}
 .bar .who{font-weight:600;letter-spacing:.04em;font-size:12px;opacity:.75}
 .steps{display:flex;gap:4px;flex-wrap:wrap}
-.step{padding:3px 10px;border-radius:99px;font-size:12.5px;border:1px solid rgb(255 255 255 / .2);opacity:.55}
+.step{background:transparent;color:inherit;font:inherit;cursor:pointer;padding:3px 10px;border-radius:99px;font-size:12.5px;border:1px solid rgb(255 255 255 / .2);opacity:.55}
 .step.now{opacity:1;background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
 .step.done{opacity:.85}
+.step:not(:disabled):hover{opacity:1;border-color:#fff}
+.step:disabled{cursor:default}
 .bar .acts{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .bbtn{border:1px solid rgb(255 255 255 / .28);background:transparent;color:var(--bar-fg);border-radius:7px;padding:7px 12px;font-size:13.5px;font-weight:500}
 .bbtn.main{background:#fff;color:#1c1819;border-color:#fff;font-weight:600}
@@ -193,6 +196,18 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ed-img img{max-height:120px;max-width:200px;border:1px solid var(--faint);display:block}
 .ed-img input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .ed-img label.ibtn{cursor:pointer}
+.sa{margin:12px 0 0 30px;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.sa-line{display:flex;align-items:flex-end;gap:10px;border-bottom:1.5px solid var(--rule);padding-bottom:2px}
+.sa-lbl{font-family:var(--f-ui);font-weight:600;font-size:14px;padding-bottom:6px}
+.sa-in{flex:1;min-width:0;border:0;background:transparent;font-family:var(--f-hand);font-size:28px;line-height:1.2;padding:2px 0;color:var(--ink)}
+.sa-in:disabled{opacity:1}
+.sa-in::placeholder{font-family:var(--f-ui);font-size:14px;color:var(--ink-2);opacity:.7}
+.sa-stat{font-family:var(--f-ui);font-size:14px;padding-bottom:6px}
+.sa-key{font-family:var(--f-ui);font-size:13.5px;color:var(--red)}
+.sa-key span{color:var(--ink-2)}
+.ed-kw{display:flex;gap:8px;align-items:center}
+.ed-kw input{flex:1}
+@media (max-width:600px){.sa{margin-left:0}}
 .lightbox{position:fixed;inset:0;z-index:50;background:rgb(10 8 9 / .86);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
 @media (max-width:600px){.q-img{margin-left:0;max-width:100%}}
@@ -336,45 +351,60 @@ async function saveQuiz(){
 async function setPhase(ph){ S.quiz.phase=ph; clearTimeout(saveT); await saveQuiz(); phaseChanged(); render(); }
 function mergedEntries(){ const m={}; for(const [id,e] of Object.entries(S.subs)) if(e.nick) m[id]=e; return m; }
 async function writeResults(v){ if(S.local) S.results=v; else if(v===null) await FB.remove(R('results')); else await FB.set(R('results'),v); }
+const normTxt = v => String(v ?? '').normalize('NFC').toLowerCase().replace(/\s+/g,'');
+const kwList = k => (Array.isArray(k) ? k : (k && typeof k==='object' ? Object.values(k) : [])).map(String).filter(x=>x.trim());
+function matchText(answer, key){ const a=normTxt(answer); return !!a && kwList(key).some(k=>{ const kk=normTxt(k); return kk && a.includes(kk); }); }
+function answered(e,q){ return q.type==='game' ? e.gm?.[q.id]!==undefined : (e.ans?.[q.id]!==undefined && e.ans?.[q.id]!==''); }
+function validateQuiz(){
+  const qs=S.quiz.questions;
+  if(!qs.length) return '문제를 1개 이상 만들어 주세요.';
+  for(let i=0;i<qs.length;i++){ const q=qs[i];
+    if(q.type==='choice' && (S.key[q.id]===undefined || !q.text.trim() || q.options.some(o=>!o.trim()))) return `${i+1}번 문제의 지문, 보기 5개, 정답을 모두 채워 주세요.`;
+    if(q.type==='text' && (!q.text.trim() || !kwList(S.key[q.id]).length)) return `${i+1}번 주관식 문제의 지문과 정답 단어를 채워 주세요.`;
+  }
+  return '';
+}
+function gradeAll(base){
+  const qs=S.quiz.questions; let total=0; qs.forEach(q=>total+=Number(q.points)||0);
+  const entries={};
+  for(const [id,e] of Object.entries(base||{})){
+    let score=0; const marks={};
+    qs.forEach(q=>{
+      const ok = q.type==='game' ? (Number(e.gm?.[q.id])||0) >= (Number(q.target)||0)
+               : q.type==='text' ? matchText(e.ans?.[q.id], S.key[q.id])
+               : e.ans?.[q.id]===S.key[q.id];
+      marks[q.id]=ok?1:0; if(ok) score+=Number(q.points)||0;
+    });
+    entries[id]={...e,score,marks};
+  }
+  return {graded:true,entries,key:S.key,total,gradedAt:Date.now()};
+}
+async function goPhase(t){
+  const cur=S.quiz.phase; if(t===cur) return;
+  if(cur==='draft' && t!=='draft'){ const m=validateQuiz(); if(m){ S.hostMsg=m; return; } delete S.quiz.example; }
+  if(t==='draft'){ await writeResults(null); S.viewPid=null; S.hostTab='edit'; await setPhase('draft'); }
+  if(t==='open'){ await writeResults(null); S.viewPid=null; await setPhase('open'); }
+  if(t==='closed'){
+    if(cur==='graded'){ const entries={}; for(const [id,e] of Object.entries(S.results?.entries||{})){ const {score,marks,...rest}=e; entries[id]=rest; } await writeResults({graded:false,entries}); await setPhase('closed'); }
+    else { await setPhase('closed'); await writeResults({graded:false,entries:mergedEntries(),closedAt:Date.now()}); } // 먼저 잠가서 응시자 쓰기를 막음
+  }
+  if(t==='graded'){
+    let base;
+    if(cur==='closed') base=S.results?.entries||mergedEntries();
+    else { await setPhase('closed'); base=mergedEntries(); }
+    S.wasGraded=false;
+    await writeResults(gradeAll(base));
+    await setPhase('graded');
+  }
+}
 async function hostAction(act){
   S.hostMsg='';
   try{
     if(act==='asviewer'){ S.isHost=false; render(); return; }
     if(act==='logout'){ await FB.signOut(S.auth); location.reload(); return; }
-    if(act==='start'){
-      const qs=S.quiz.questions;
-      if(!qs.length){ S.hostMsg='문제를 1개 이상 만들어 주세요.'; return renderBar(); }
-      const bad=qs.findIndex(q=>q.type==='choice' && (S.key[q.id]===undefined || !q.text.trim() || q.options.some(o=>!o.trim())));
-      if(bad>=0){ S.hostMsg=`${bad+1}번 문제의 지문, 보기 5개, 정답을 모두 채워 주세요.`; return renderBar(); }
-      delete S.quiz.example;
-      await setPhase('open');
-    }
-    if(act==='close'){
-      await setPhase('closed'); // 먼저 잠가서 보안 규칙상 응시자 쓰기를 막음
-      await writeResults({graded:false,entries:mergedEntries(),closedAt:Date.now()});
-    }
-    if(act==='reopen'){ await writeResults(null); await setPhase('open'); }
-    if(act==='grade'){
-      const base = S.results?.entries || mergedEntries();
-      const qs=S.quiz.questions; let total=0; qs.forEach(q=>total+=Number(q.points)||0);
-      const entries={};
-      for(const [id,e] of Object.entries(base)){
-        let score=0; const marks={};
-        qs.forEach(q=>{
-          const ok = q.type==='game' ? (Number(e.gm?.[q.id])||0) >= (Number(q.target)||0) : e.ans?.[q.id]===S.key[q.id];
-          marks[q.id]=ok?1:0; if(ok) score+=Number(q.points)||0;
-        });
-        entries[id]={...e,score,marks};
-      }
-      S.wasGraded=false;
-      await writeResults({graded:true,entries,key:S.key,total,gradedAt:Date.now()});
-      await setPhase('graded');
-    }
-    if(act==='ungrade'){
-      const entries={}; for(const [id,e] of Object.entries(S.results?.entries||{})){ const {score,marks,...rest}=e; entries[id]=rest; }
-      await writeResults({graded:false,entries});
-      await setPhase('closed');
-    }
+    if(act.startsWith('go:')) await goPhase(act.slice(3));
+    if(act==='next'){ const i=PHASES.findIndex(p=>p[0]===S.quiz.phase); if(i<PHASES.length-1) await goPhase(PHASES[i+1][0]); }
+    if(act==='prev'){ const i=PHASES.findIndex(p=>p[0]===S.quiz.phase); if(i>0) await goPhase(PHASES[i-1][0]); }
     if(act==='reset'){
       if(S.confirm!=='reset'){ S.confirm='reset'; S.hostMsg='한 번 더 누르면 응시자 답안과 채점 결과를 모두 지우고 출제 단계로 돌아갑니다. 문제는 남아 있어요.'; return renderBar(); }
       S.confirm=null;
@@ -476,13 +506,13 @@ function renderBar(){
   if(S.local && !S.isHost){ el.innerHTML=`<div class="bar"><span class="who">미리보기 · 시청자 화면</span><span style="opacity:.75">시청자에게는 이 위쪽 바가 보이지 않아요.</span><div class="acts"><button class="bbtn main" data-act="ashost">감독관 화면으로</button></div></div>`; return; }
   if(!S.isHost || !S.quiz){ el.innerHTML=''; return; }
   const ph=S.quiz.phase; const idx=PHASES.findIndex(p=>p[0]===ph);
-  const steps=PHASES.map((p,i)=>`<span class="step ${i===idx?'now':i<idx?'done':''}">${p[1]}</span>`).join('');
+  const steps=PHASES.map((p,i)=>`<button class="step ${i===idx?'now':i<idx?'done':''}" data-act="go:${p[0]}" ${i===idx?'aria-current="step" disabled':''} title="${p[1]} 단계로 이동">${p[1]}</button>`).join('');
   const b=(act,label,cls='')=>`<button class="bbtn ${cls}" data-act="${act}">${label}</button>`;
   let acts='';
-  if(ph==='draft') acts=b('start','시험 시작','main');
-  if(ph==='open') acts=b('close','답안 마감','main');
-  if(ph==='closed') acts=b('grade','채점하기','main')+b('reopen','마감 취소');
-  if(ph==='graded') acts=b('ungrade','채점 취소');
+  const nextLbl={draft:'시험 시작',open:'답안 마감',closed:'채점하기'}[ph];
+  const prevLbl={open:'출제로 돌아가기',closed:'마감 취소',graded:'채점 취소'}[ph];
+  if(prevLbl) acts+=b('prev','← '+prevLbl);
+  if(nextLbl) acts+=b('next',nextLbl+' →','main');
   if(ph!=='draft') acts+=b('reset', S.confirm==='reset'?'정말 초기화':'새 시험 (초기화)','danger');
   const tabs = ph==='draft' ? `<div class="tabs"><button class="tab ${S.hostTab==='edit'?'on':''}" data-tab="edit">문제 편집</button><button class="tab ${S.hostTab==='preview'?'on':''}" data-tab="preview">시험지 미리보기</button></div>` : '';
   let roster='';
@@ -491,7 +521,7 @@ function renderBar(){
     const list = Object.entries(src);
     const nQ = S.quiz.questions.length;
     roster = `<div class="roster"><span>응시자 ${list.length}명</span>`+ list.slice(0,60).map(([id,e])=>{
-      const done = S.quiz.questions.filter(q=> q.type==='game' ? e.gm?.[q.id]!==undefined : e.ans?.[q.id]!==undefined).length;
+      const done = S.quiz.questions.filter(q=>answered(e,q)).length;
       return `<span class="chip"><b>${esc(e.nick)}</b> ${e.score!==undefined?e.score+'점':done+'/'+nQ}</span>`;
     }).join('') + (list.length>60?`<span class="chip">외 ${list.length-60}명</span>`:'') + `</div>`;
   }
@@ -568,6 +598,12 @@ function ranking(){
 }
 
 function renderSheet(){
+  const ae=document.activeElement, fid=ae&&ae.id&&ae.closest&&ae.closest('#sheet')?ae.id:null;
+  let sel=null; try{ if(fid && typeof ae.selectionStart==='number') sel=[ae.selectionStart,ae.selectionEnd]; }catch(e){}
+  renderSheetInner();
+  if(fid){ const n=document.getElementById(fid); if(n && n!==ae && !n.disabled){ n.focus({preventScroll:true}); try{ if(sel) n.setSelectionRange(sel[0],sel[1]); }catch(e){} } }
+}
+function renderSheetInner(){
   const sh=$('#sheet');
   if(S.loading){ sh.innerHTML=`<div class="empty"><h2>시험지를 불러오는 중…</h2>${S.slow?'<p>연결이 늦어지고 있어요. 잠시만 기다려 주세요.</p>':''}</div>`; return; }
   if(S.fatal){ sh.innerHTML=header0()+`<div class="empty"><h2>연결 설정을 확인해 주세요</h2><p>${esc(S.fatal)}</p></div>`; return; }
@@ -622,6 +658,23 @@ function questionEl(q,i){
       ol.appendChild(li);
     });
     el.appendChild(ol);
+  } else if(q.type==='text'){
+    const wrap=document.createElement('div'); wrap.className='sa';
+    const showKey = graded || host;
+    const kws = kwList(graded ? r.key?.[q.id] : S.key[q.id]);
+    if(host && !ent && ph!=='draft'){
+      const src=r?.entries||mergedEntries(); const list=Object.values(src);
+      const n=list.filter(e=>answered(e,q)).length;
+      const okN = graded ? list.filter(e=>e.marks?.[q.id]).length : list.filter(e=>matchText(e.ans?.[q.id],S.key[q.id])).length;
+      wrap.innerHTML=`<div class="sa-line"><span class="sa-lbl">답</span><span class="sa-stat">응답 ${n}명 · 정답 ${okN}명</span></div>`;
+    } else {
+      const val=String(ans[q.id]??'');
+      wrap.innerHTML=`<label class="sa-line"><span class="sa-lbl">답</span><input class="sa-in" id="sa-${q.id}" maxlength="100" autocomplete="off" placeholder="${canAnswer?'여기에 답을 쓰세요':''}" ${canAnswer?'':'disabled'}></label>`;
+      const inp=wrap.querySelector('input'); inp.value=val;
+      inp.addEventListener('input',()=>{ if(!canAnswer) return; S.ans[q.id]=inp.value.slice(0,100); pushAnswers(); });
+    }
+    if(showKey && kws.length) wrap.insertAdjacentHTML('beforeend',`<div class="sa-key">정답 단어: ${kws.map(k=>`<b>${esc(k)}</b>`).join(', ')} <span>(이 단어가 들어가면 정답)</span></div>`);
+    el.appendChild(wrap);
   } else {
     const g=GAMES[q.game]||GAMES.catch;
     const best = gm[q.id];
@@ -647,11 +700,14 @@ function editor(){
   return `<div class="ed-meta"><label>영역 이름 <input type="text" id="ed-title" value="${esc(q.title)}" maxlength="30"></label>${q.example?'<span class="example">예시 문제 · 자유롭게 고치거나 지우세요</span>':''}</div>
   <div class="ed-list" id="ed-list">${q.questions.map(edCard).join('')}</div>
   <div class="ed-sum"><span>총 ${q.questions.length}문항 · 총점 ${total}점</span><button class="ibtn" id="ed-even">배점을 100점에 맞추기</button></div>
-  <div style="display:grid;gap:8px;margin-top:12px"><button class="ed-add" id="ed-add">+ 객관식 문제 추가</button><button class="ed-add" id="ed-addg">+ 미니게임 문제 추가</button></div>`;
+  <div style="display:grid;gap:8px;margin-top:12px"><button class="ed-add" id="ed-add">+ 객관식 문제 추가</button><button class="ed-add" id="ed-addt">+ 주관식 문제 추가</button><button class="ed-add" id="ed-addg">+ 미니게임 문제 추가</button></div>`;
 }
 function edCard(q,i){
   const n=S.quiz.questions.length;
-  const body = q.type==='choice'
+  const body = q.type==='text'
+    ? `<label class="ed-kw"><span>정답 단어</span><input type="text" id="kw-${q.id}" data-f="kw" value="${esc(kwList(S.key[q.id]).join(', '))}" placeholder="예: 빼빼로, pepero"></label>
+       <span class="hint">응시자가 쓴 답 어디에든 이 단어가 들어가면 정답이에요. 띄어쓰기와 영어 대소문자는 무시해요. 쉼표로 여러 개를 적으면 그중 하나만 들어가도 정답이에요.</span>`
+    : q.type==='choice'
     ? q.options.map((o,k)=>`<div class="ed-opt"><label><input type="radio" name="k-${q.id}" data-f="key" data-k="${k}" ${S.key[q.id]===k?'checked':''}> 정답</label><span class="circ">${NUMS[k]}</span><input type="text" id="o-${q.id}-${k}" data-f="opt" data-k="${k}" value="${esc(o)}" placeholder="보기 ${k+1}"></div>`).join('')
       + `<span class="hint">정답 라디오를 눌러 정답을 표시하세요. 정답은 채점 전까지 응시자에게 보이지 않아요.</span>`
     : `<div class="ed-top"><label>게임 <select data-f="game">${Object.entries(GAMES).map(([k,g])=>`<option value="${k}" ${q.game===k?'selected':''}>${g.name}</option>`).join('')}</select></label>
@@ -659,7 +715,7 @@ function edCard(q,i){
        <span class="hint">${GAMES[q.game].desc}</span><div class="ed-game" data-game="${q.id}"></div>`;
   return `<div class="ed" data-q="${q.id}">
     <div class="ed-top"><span class="no">${i+1}.</span>
-      <label>유형 <select data-f="type"><option value="choice" ${q.type==='choice'?'selected':''}>객관식 (5지선다)</option><option value="game" ${q.type==='game'?'selected':''}>미니게임</option></select></label>
+      <label>유형 <select data-f="type"><option value="choice" ${q.type==='choice'?'selected':''}>객관식 (5지선다)</option><option value="text" ${q.type==='text'?'selected':''}>주관식 (단어 포함)</option><option value="game" ${q.type==='game'?'selected':''}>미니게임</option></select></label>
       <label>배점 <input type="number" min="0" data-f="points" value="${q.points}"> 점</label>
       <span class="sp"><button class="ibtn" data-mv="-1" ${i===0?'disabled':''} aria-label="위로">↑</button><button class="ibtn" data-mv="1" ${i===n-1?'disabled':''} aria-label="아래로">↓</button><button class="ibtn del" data-del>삭제</button></span>
     </div>
@@ -670,11 +726,12 @@ function edCard(q,i){
     ${body}
   </div>`;
 }
-function newQ(type){ const id=uid(); return type==='game' ? {id,type:'game',points:10,text:'다음 미니게임에서 목표 기록을 달성하시오.',game:'catch',target:15} : {id,type:'choice',points:10,text:'',options:['','','','','']}; }
+function newQ(type){ const id=uid(); if(type==='text') return {id,type:'text',points:10,text:''}; return type==='game' ? {id,type:'game',points:10,text:'다음 미니게임에서 목표 기록을 달성하시오.',game:'catch',target:15} : {id,type:'choice',points:10,text:'',options:['','','','','']}; }
 function bindEditor(){
   const q=S.quiz;
   $('#ed-title').oninput=e=>{ q.title=e.target.value; $('.subject').textContent=q.title||'빼빼로 영역'; scheduleSave(); };
   $('#ed-add').onclick=()=>{ q.questions.push(newQ('choice')); scheduleSave(); render(); };
+  $('#ed-addt').onclick=()=>{ q.questions.push(newQ('text')); scheduleSave(); render(); };
   $('#ed-addg').onclick=()=>{ q.questions.push(newQ('game')); scheduleSave(); render(); };
   $('#ed-even').onclick=()=>{ const n=q.questions.length; if(!n) return; const base=Math.floor(100/n); let rem=100-base*n; q.questions.forEach((x,i)=>x.points=base+(i>=n-rem?1:0)); scheduleSave(); render(); };
   const list=$('#ed-list');
@@ -684,13 +741,14 @@ function bindEditor(){
     if(f==='opt') qq.options[+e.target.dataset.k]=e.target.value;
     if(f==='points'){ qq.points=Math.max(0,Number(e.target.value)||0); updSum(); }
     if(f==='target') qq.target=Math.max(0,Number(e.target.value)||0);
+    if(f==='kw') S.key[qq.id]=e.target.value.split(',').map(x=>x.trim()).filter(Boolean);
     scheduleSave();
   });
   list.addEventListener('change',e=>{
     const card=e.target.closest('[data-q]'); if(!card) return; const qq=q.questions.find(x=>x.id===card.dataset.q); const f=e.target.dataset.f;
     if(f==='key'){ S.key[qq.id]=+e.target.dataset.k; scheduleSave(); }
     if(f==='img'){ const file=e.target.files?.[0]; e.target.value=''; setQuestionImage(qq,file); }
-    if(f==='type'){ const nq=newQ(e.target.value); nq.id=qq.id; if(qq.img) nq.img=qq.img; nq.points=qq.points; nq.text=qq.text||nq.text; Object.keys(qq).forEach(k=>delete qq[k]); Object.assign(qq,nq); if(nq.type==='game') delete S.key[qq.id]; scheduleSave(); render(); }
+    if(f==='type'){ const nq=newQ(e.target.value); nq.id=qq.id; if(qq.img) nq.img=qq.img; nq.points=qq.points; nq.text=qq.text||nq.text; Object.keys(qq).forEach(k=>delete qq[k]); Object.assign(qq,nq); delete S.key[qq.id]; scheduleSave(); render(); }
     if(f==='game'){ qq.game=e.target.value; qq.target=GAMES[qq.game].def; scheduleSave(); render(); }
   });
   list.addEventListener('click',e=>{
