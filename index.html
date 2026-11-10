@@ -131,7 +131,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .q-passage{white-space:pre-wrap;font-weight:400;font-size:15px;border:1px solid var(--rule);padding:10px 14px}
 .q-cond{color:var(--note);font-family:var(--f-ui);font-size:13px;font-weight:500;line-height:1.5}
 .q-cond b{display:inline-block;border:1px solid currentColor;border-radius:3px;padding:0 6px;margin-right:8px;font-weight:600;font-size:12px}
-.q-cond i{font-style:normal;opacity:.6;margin:0 2px}
+.q-cond ul{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:1px}
+.q-cond li{padding-left:12px;text-indent:-12px}
+.q-cond li::before{content:"·";display:inline-block;width:12px;text-indent:0;opacity:.7}
 .q-hint{color:var(--note);font-family:var(--f-ui);font-size:.82em;font-weight:500}
 .opts{list-style:none;margin:12px 0 0;padding:0 0 0 30px;display:grid;gap:4px}
 .opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:5px 6px;border-radius:4px;line-height:1.5}
@@ -682,7 +684,7 @@ function fmtQ(text, ptsHtml){
   for(const bl of blocks){
     if(bl.type==='cond'){
       const items=bl.lines.map(x=>x.replace(/^\s*[·•\-*ㆍ]\s*/,'').trim()).filter(Boolean);
-      out+=`<div class="q-cond"><b>${bl.label}</b>${items.map(esc).join(' <i>·</i> ')}</div>`;
+      out+=`<div class="q-cond"><b>${bl.label}</b><ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
     } else if(first){
       out+=`<div class="q-prompt">${fmtInline(bl.lines.join('\n'))} ${ptsHtml}</div>`; first=false; ptsHtml='';
     } else {
