@@ -208,6 +208,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ed-kw{display:flex;gap:8px;align-items:center}
 .ed-kw input{flex:1}
 @media (max-width:600px){.sa{margin-left:0}}
+.opts.has-img{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.opts.has-img .opt{flex-direction:column;align-items:stretch;gap:6px;border:1px solid var(--faint);padding:8px;height:100%}
+.opts.has-img .opt.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opts.has-img .opt-txt{display:grid;gap:4px;text-align:center}
+.opts.has-img .cnt{margin-left:0;padding-left:0;text-align:center}
+.opt-img{display:block;width:100%;height:120px;object-fit:contain;background:var(--paper)}
+.opt-wait{font-family:var(--f-ui);font-size:12px;color:var(--ink-2);padding:30px 0}
+.ed-oimg{height:44px;width:auto;max-width:80px;border:1px solid var(--faint)}
+.ed-opt .ed-img{display:contents}
 .lightbox{position:fixed;inset:0;z-index:50;background:rgb(10 8 9 / .86);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
 @media (max-width:600px){.q-img{margin-left:0;max-width:100%}}
@@ -281,7 +290,10 @@ const firebaseConfig = {
 function normQuiz(d){
   if(!d) return null;
   const q={...d, questions:(d.questions||[]).filter(Boolean).map(x=>({...x, options: x.type==='choice' ? [0,1,2,3,4].map(k=>(x.options||[])[k]??'') : undefined}))};
-  q.questions.forEach(x=>{ if(x.options===undefined) delete x.options; });
+  q.questions.forEach(x=>{
+    if(x.options===undefined){ delete x.options; delete x.optImgs; }
+    else x.optImgs=[0,1,2,3,4].map(k=>(x.optImgs||{})[k]||'');
+  });
   return q;
 }
 function normEntries(src){ const m={}; for(const [id,e] of Object.entries(src||{})) m[id]={nick:e.nick||'',ans:e.ans||{},gm:e.gm||{},t:e.t||0, ...(e.score!==undefined?{score:e.score,marks:e.marks||{}}:{})}; return m; }
@@ -359,7 +371,7 @@ function validateQuiz(){
   const qs=S.quiz.questions;
   if(!qs.length) return '문제를 1개 이상 만들어 주세요.';
   for(let i=0;i<qs.length;i++){ const q=qs[i];
-    if(q.type==='choice' && (S.key[q.id]===undefined || !q.text.trim() || q.options.some(o=>!o.trim()))) return `${i+1}번 문제의 지문, 보기 5개, 정답을 모두 채워 주세요.`;
+    if(q.type==='choice' && (S.key[q.id]===undefined || !q.text.trim() || q.options.some((o,k)=>!o.trim() && !q.optImgs?.[k]))) return `${i+1}번 문제의 지문, 보기 5개(글이나 사진), 정답을 모두 채워 주세요.`;
     if(q.type==='text' && (!q.text.trim() || !kwList(S.key[q.id]).length)) return `${i+1}번 주관식 문제의 지문과 정답 단어를 채워 주세요.`;
   }
   return '';
@@ -431,11 +443,11 @@ function pushAnswers(){
 }
 
 /* ---------------- question images ---------------- */
-async function shrinkImage(file){
+async function shrinkImage(file,maxSide){
   const url=URL.createObjectURL(file);
   try{
     const img=await new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.src=url; });
-    let max=1100, q=0.82, out='';
+    let max=maxSide||1100, q=0.82, out='';
     for(let tries=0; tries<5; tries++){
       const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
       const w=Math.round(img.naturalWidth*sc), h=Math.round(img.naturalHeight*sc);
@@ -448,21 +460,28 @@ async function shrinkImage(file){
     return out;
   } finally { URL.revokeObjectURL(url); }
 }
-async function setQuestionImage(qq,file){
-  if(!file || !file.type.startsWith('image/')){ S.hostMsg='사진 파일(JPG, PNG 등)만 넣을 수 있어요.'; renderBar(); return; }
+async function uploadImage(file,max){
+  if(!file || !file.type.startsWith('image/')){ S.hostMsg='사진 파일(JPG, PNG 등)만 넣을 수 있어요.'; renderBar(); return null; }
   S.hostMsg='사진을 줄이는 중…'; renderBar();
   let data;
-  try{ data=await shrinkImage(file); }catch(e){ S.hostMsg='이 사진은 열 수 없어요. 다른 파일로 해 주세요.'; renderBar(); return; }
-  const old=qq.img; const id='i'+Math.random().toString(36).slice(2,9);
+  try{ data=await shrinkImage(file,max); }catch(e){ S.hostMsg='이 사진은 열 수 없어요. 다른 파일로 해 주세요.'; renderBar(); return null; }
+  const id='i'+Math.random().toString(36).slice(2,9);
   try{
     if(!S.local) await FB.set(R('images/'+id),data);
-    S.images={...S.images,[id]:data};
-    qq.img=id; scheduleSave();
-    if(old) removeImage(old);
-    S.hostMsg='';
-  }catch(e){ S.hostMsg='사진을 저장하지 못했어요. 보안 규칙에 images 항목이 있는지 확인해 주세요.'; }
-  render();
+    S.images={...S.images,[id]:data}; S.hostMsg='';
+    return id;
+  }catch(e){ S.hostMsg='사진을 저장하지 못했어요. 보안 규칙에 images 항목이 있는지 확인해 주세요.'; renderBar(); return null; }
 }
+async function setQuestionImage(qq,file){
+  const id=await uploadImage(file,1100); if(!id) return;
+  const old=qq.img; qq.img=id; scheduleSave(); if(old) removeImage(old); render();
+}
+async function setOptionImage(qq,k,file){
+  const id=await uploadImage(file,640); if(!id) return;
+  if(!qq.optImgs) qq.optImgs=['','','','',''];
+  const old=qq.optImgs[k]; qq.optImgs[k]=id; scheduleSave(); if(old) removeImage(old); render();
+}
+function dropQuestionImages(qq){ if(qq.img) removeImage(qq.img); (qq.optImgs||[]).forEach(id=>{ if(id) removeImage(id); }); }
 function removeImage(id){
   const m={...S.images}; delete m[id]; S.images=m;
   if(!S.local) FB.remove(R('images/'+id)).catch(()=>{});
@@ -649,11 +668,11 @@ function questionEl(q,i){
   if(graded && ent){ const ok=ent.marks?.[q.id]; mark=`<span class="mark ${ok?'ok':'no'}" aria-label="${ok?'정답':'오답'}"></span>`; }
   el.innerHTML=`<div class="q-line"><span class="q-num">${mark}${i+1}.</span><div class="q-text">${esc(q.text)} <span class="pts">[${Number(q.points)||0}점]</span></div></div>${imgHtml(q)}`;
   if(q.type==='choice'){
-    const ol=document.createElement('ol'); ol.className='opts';
+    const ol=document.createElement('ol'); const hasImg=(q.optImgs||[]).some(Boolean); ol.className='opts'+(hasImg?' has-img':'');
     q.options.forEach((o,k)=>{
       const li=document.createElement('li');
       const isKey = key && key[q.id]===k && (graded || host);
-      li.innerHTML=`<button class="opt ${ans[q.id]===k?'on':''} ${isKey?'key':''}" ${canAnswer?'':'disabled'} aria-pressed="${ans[q.id]===k}"><span class="circ">${NUMS[k]}</span><span class="opt-txt">${esc(o)}</span>${counts?`<span class="cnt">${counts[k]}명</span>`:''}</button>`;
+      li.innerHTML=`<button class="opt ${ans[q.id]===k?'on':''} ${isKey?'key':''}" ${canAnswer?'':'disabled'} aria-pressed="${ans[q.id]===k}"><span class="circ">${NUMS[k]}</span><span class="opt-txt">${q.optImgs?.[k] ? (S.images[q.optImgs[k]] ? `<img class="opt-img" src="${S.images[q.optImgs[k]]}" alt="${k+1}번 보기 사진">` : '<span class="opt-wait">사진 불러오는 중…</span>') : ''}${o?`<span>${esc(o)}</span>`:''}</span>${counts?`<span class="cnt">${counts[k]}명</span>`:''}</button>`;
       li.firstElementChild.onclick=()=>{ if(!canAnswer) return; S.ans[q.id]=k; ol.querySelectorAll('.opt').forEach((b,j)=>{b.classList.toggle('on',j===k);b.setAttribute('aria-pressed',j===k);}); pushAnswers(); };
       ol.appendChild(li);
     });
@@ -708,8 +727,8 @@ function edCard(q,i){
     ? `<label class="ed-kw"><span>정답 단어</span><input type="text" id="kw-${q.id}" data-f="kw" value="${esc(kwList(S.key[q.id]).join(', '))}" placeholder="예: 빼빼로, pepero"></label>
        <span class="hint">응시자가 쓴 답 어디에든 이 단어가 들어가면 정답이에요. 띄어쓰기와 영어 대소문자는 무시해요. 쉼표로 여러 개를 적으면 그중 하나만 들어가도 정답이에요.</span>`
     : q.type==='choice'
-    ? q.options.map((o,k)=>`<div class="ed-opt"><label><input type="radio" name="k-${q.id}" data-f="key" data-k="${k}" ${S.key[q.id]===k?'checked':''}> 정답</label><span class="circ">${NUMS[k]}</span><input type="text" id="o-${q.id}-${k}" data-f="opt" data-k="${k}" value="${esc(o)}" placeholder="보기 ${k+1}"></div>`).join('')
-      + `<span class="hint">정답 라디오를 눌러 정답을 표시하세요. 정답은 채점 전까지 응시자에게 보이지 않아요.</span>`
+    ? q.options.map((o,k)=>`<div class="ed-opt"><label><input type="radio" name="k-${q.id}" data-f="key" data-k="${k}" ${S.key[q.id]===k?'checked':''}> 정답</label><span class="circ">${NUMS[k]}</span><input type="text" id="o-${q.id}-${k}" data-f="opt" data-k="${k}" value="${esc(o)}" placeholder="${q.optImgs?.[k]?'설명 (선택)':'보기 '+(k+1)}">${q.optImgs?.[k] && S.images[q.optImgs[k]] ? `<img class="ed-oimg" src="${S.images[q.optImgs[k]]}" alt="">` : ''}<span class="ed-img"><label class="ibtn" for="oi-${q.id}-${k}" title="${k+1}번 보기에 사진 넣기">${q.optImgs?.[k]?'바꾸기':'사진'}</label><input type="file" id="oi-${q.id}-${k}" accept="image/*" data-f="optimg" data-k="${k}"></span>${q.optImgs?.[k]?`<button class="ibtn del" data-optimgdel="${k}" aria-label="${k+1}번 보기 사진 빼기">✕</button>`:''}</div>`).join('')
+      + `<span class="hint">정답 라디오를 눌러 정답을 표시하세요. 보기마다 '사진'으로 그림을 넣을 수 있고, 사진만 있으면 글은 비워도 돼요.</span>`
     : `<div class="ed-top"><label>게임 <select data-f="game">${Object.entries(GAMES).map(([k,g])=>`<option value="${k}" ${q.game===k?'selected':''}>${g.name}</option>`).join('')}</select></label>
        <label>목표 <input type="number" min="0" data-f="target" value="${q.target}"> ${GAMES[q.game].unit} 이상이면 정답</label></div>
        <span class="hint">${GAMES[q.game].desc}</span><div class="ed-game" data-game="${q.id}"></div>`;
@@ -726,7 +745,7 @@ function edCard(q,i){
     ${body}
   </div>`;
 }
-function newQ(type){ const id=uid(); if(type==='text') return {id,type:'text',points:10,text:''}; return type==='game' ? {id,type:'game',points:10,text:'다음 미니게임에서 목표 기록을 달성하시오.',game:'catch',target:15} : {id,type:'choice',points:10,text:'',options:['','','','','']}; }
+function newQ(type){ const id=uid(); if(type==='text') return {id,type:'text',points:10,text:''}; return type==='game' ? {id,type:'game',points:10,text:'다음 미니게임에서 목표 기록을 달성하시오.',game:'catch',target:15} : {id,type:'choice',points:10,text:'',options:['','','','',''],optImgs:['','','','','']}; }
 function bindEditor(){
   const q=S.quiz;
   $('#ed-title').oninput=e=>{ q.title=e.target.value; $('.subject').textContent=q.title||'빼빼로 영역'; scheduleSave(); };
@@ -748,13 +767,16 @@ function bindEditor(){
     const card=e.target.closest('[data-q]'); if(!card) return; const qq=q.questions.find(x=>x.id===card.dataset.q); const f=e.target.dataset.f;
     if(f==='key'){ S.key[qq.id]=+e.target.dataset.k; scheduleSave(); }
     if(f==='img'){ const file=e.target.files?.[0]; e.target.value=''; setQuestionImage(qq,file); }
-    if(f==='type'){ const nq=newQ(e.target.value); nq.id=qq.id; if(qq.img) nq.img=qq.img; nq.points=qq.points; nq.text=qq.text||nq.text; Object.keys(qq).forEach(k=>delete qq[k]); Object.assign(qq,nq); delete S.key[qq.id]; scheduleSave(); render(); }
+    if(f==='optimg'){ const file=e.target.files?.[0]; e.target.value=''; setOptionImage(qq,+e.target.dataset.k,file); }
+    if(f==='type'){ const nq=newQ(e.target.value); nq.id=qq.id; if(qq.img) nq.img=qq.img; (qq.optImgs||[]).forEach(id=>{ if(id) removeImage(id); }); nq.points=qq.points; nq.text=qq.text||nq.text; Object.keys(qq).forEach(k=>delete qq[k]); Object.assign(qq,nq); delete S.key[qq.id]; scheduleSave(); render(); }
     if(f==='game'){ qq.game=e.target.value; qq.target=GAMES[qq.game].def; scheduleSave(); render(); }
   });
   list.addEventListener('click',e=>{
     const card=e.target.closest('[data-q]'); if(!card) return; const i=q.questions.findIndex(x=>x.id===card.dataset.q);
+    const od=e.target.closest('[data-optimgdel]');
+    if(od){ const qq=q.questions[i]; const k=+od.dataset.optimgdel; const id=qq.optImgs?.[k]; if(id){ qq.optImgs[k]=''; removeImage(id); } scheduleSave(); render(); return; }
     if(e.target.closest('[data-imgdel]')){ const qq=q.questions[i]; const id=qq.img; delete qq.img; if(id) removeImage(id); scheduleSave(); render(); return; }
-    if(e.target.closest('[data-del]')){ const [r]=q.questions.splice(i,1); delete S.key[r.id]; if(r.img) removeImage(r.img); scheduleSave(); render(); }
+    if(e.target.closest('[data-del]')){ const [r]=q.questions.splice(i,1); delete S.key[r.id]; dropQuestionImages(r); scheduleSave(); render(); }
     const mv=e.target.closest('[data-mv]'); if(mv){ const j=i+Number(mv.dataset.mv); [q.questions[i],q.questions[j]]=[q.questions[j],q.questions[i]]; scheduleSave(); render(); }
   });
   list.querySelectorAll('[data-game]').forEach(slot=>{
