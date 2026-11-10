@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>빼빼로데이 모의고사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Pen+Script&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: a Korean 수능-style exam sheet on a desk — header band with 교시/영역, two-column question grid split by a hairline, red-pen grading on top. */
+:root{
+  --desk:#e7e1e3;
+  --paper:#fffefb;
+  --ink:#1c1819;
+  --ink-2:#5d5457;
+  --rule:#2a2426;
+  --faint:#d9d1d3;
+  --red:#d3202b;
+  --red-soft:#fbe3e4;
+  --choco:#5a3021;
+  --biscuit:#e2b27a;
+  --pink:#f5c9d2;
+  --ok:#1f7a4a;
+  --bar:#231d1f;
+  --bar-fg:#f6efef;
+  --f-display:"Nanum Myeongjo","Noto Serif KR","Batang",serif;
+  --f-body:"Nanum Myeongjo","Noto Serif KR","Batang",serif;
+  --f-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-hand:"Nanum Pen Script","Apple SD Gothic Neo",cursive;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --desk:#121011;--paper:#1f1b1c;--ink:#efe8e6;--ink-2:#b2a8aa;--rule:#d8cfcf;--faint:#3a3335;
+  --red:#ff5d63;--red-soft:#3d1f22;--choco:#c98a63;--biscuit:#9c7448;--pink:#5a2f39;--ok:#5fcf93;
+  --bar:#0b0909;--bar-fg:#f6efef;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#121011;--paper:#1f1b1c;--ink:#efe8e6;--ink-2:#b2a8aa;--rule:#d8cfcf;--faint:#3a3335;
+  --red:#ff5d63;--red-soft:#3d1f22;--choco:#c98a63;--biscuit:#9c7448;--pink:#5a2f39;--ok:#5fcf93;
+  --bar:#0b0909;--bar-fg:#f6efef;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--desk);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+/* ---------- proctor bar ---------- */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--desk)}
+#hostbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;max-width:960px;margin:0 auto;padding-top:12px}
+.bar{background:var(--bar);color:var(--bar-fg);font-family:var(--f-ui);font-size:14px;border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;box-shadow:0 6px 18px rgb(0 0 0 / .18)}
+.bar .who{font-weight:600;letter-spacing:.04em;font-size:12px;opacity:.75}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.step{padding:3px 10px;border-radius:99px;font-size:12.5px;border:1px solid rgb(255 255 255 / .2);opacity:.55}
+.step.now{opacity:1;background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.step.done{opacity:.85}
+.bar .acts{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.bbtn{border:1px solid rgb(255 255 255 / .28);background:transparent;color:var(--bar-fg);border-radius:7px;padding:7px 12px;font-size:13.5px;font-weight:500}
+.bbtn.main{background:#fff;color:#1c1819;border-color:#fff;font-weight:600}
+.bbtn.danger{border-color:#ff7b80;color:#ffb3b6}
+.bbtn:disabled{opacity:.4;cursor:not-allowed}
+.bar .msg{flex-basis:100%;font-size:13px;color:#ffc6c9;margin:0}
+.bar .msg:empty{display:none}
+.roster{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}
+.roster .chip{background:rgb(255 255 255 / .09);border-radius:6px;padding:2px 8px}
+.roster .chip b{font-weight:600}
+.tabs{display:flex;gap:4px}
+.tab{background:transparent;border:0;color:var(--bar-fg);opacity:.6;padding:4px 8px;border-bottom:2px solid transparent;font-size:13.5px}
+.tab.on{opacity:1;border-bottom-color:var(--red)}
+
+/* ---------- sheet ---------- */
+.sheet{max-width:960px;margin:16px auto 0;background:var(--paper);border:1px solid var(--faint);box-shadow:0 1px 0 var(--faint),0 18px 40px -24px rgb(40 20 25 / .35);padding:28px clamp(16px,4vw,44px) 20px;position:relative}
+.head-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;font-family:var(--f-ui);font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.form-type{border:1.5px solid var(--rule);padding:2px 10px;font-weight:600;color:var(--ink);font-family:var(--f-display)}
+.head-title{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;border-top:3px double var(--rule);border-bottom:1.5px solid var(--rule);margin-top:8px;padding:14px 0}
+.period{font-family:var(--f-display);font-weight:700;font-size:15px;border:1.5px solid var(--rule);border-radius:99px;padding:4px 14px;justify-self:start;white-space:nowrap}
+.subject{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(28px,6vw,46px);letter-spacing:.18em;text-align:center;text-wrap:balance;line-height:1.15}
+.sticks{justify-self:end;display:flex;gap:7px;align-items:flex-end;transform:rotate(8deg)}
+.stick{width:9px;height:56px;border-radius:5px;background:linear-gradient(to top,var(--biscuit) 0 22%,var(--choco) 22% 100%)}
+.stick:nth-child(2){height:62px}
+.head-meta{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:stretch;padding:14px 0 6px;font-family:var(--f-ui);font-size:13.5px}
+.field{display:flex;align-items:center;border:1.5px solid var(--rule)}
+.field>span{padding:6px 10px;border-right:1.5px solid var(--rule);font-weight:600;white-space:nowrap;align-self:stretch;display:flex;align-items:center}
+.field input{border:0;background:transparent;font-family:var(--f-hand);font-size:26px;line-height:1;padding:4px 10px;width:180px;min-width:0}
+.field input:disabled{opacity:1}
+.field input::placeholder{color:var(--ink-2);opacity:.6}
+.idbox{display:flex}
+.idbox i{font-style:normal;width:26px;text-align:center;border-left:1px solid var(--faint);padding:6px 0;font-variant-numeric:tabular-nums;font-family:var(--f-display);font-weight:700}
+.idbox i:first-child{border-left:0}
+.scorebox{margin-left:auto;display:flex;align-items:center;gap:10px}
+.scorebox .lbl{font-weight:600}
+.score{font-family:var(--f-hand);color:var(--red);font-size:62px;line-height:.8;position:relative;padding:4px 14px 0}
+.score::after{content:"";position:absolute;inset:-6px -2px -10px -4px;border:3px solid var(--red);border-radius:50% 46% 52% 44%;transform:rotate(-6deg)}
+.score small{font-size:26px;margin-left:2px}
+.status{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);padding:6px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.status b{color:var(--red);font-weight:600}
+.notice{font-family:var(--f-ui);font-size:13px;color:var(--ink-2);border:1px dashed var(--faint);padding:8px 12px;margin-top:10px}
+
+/* ranking */
+.ranking{margin-top:18px;border:1.5px solid var(--rule);font-family:var(--f-ui);font-size:14px}
+.ranking h2{margin:0;font-family:var(--f-display);font-size:16px;padding:8px 12px;border-bottom:1.5px solid var(--rule);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.ranking h2 small{font-family:var(--f-ui);font-weight:400;color:var(--ink-2);font-size:12.5px}
+.rank-wrap{overflow-x:auto;max-height:280px;overflow-y:auto}
+.ranking table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ranking td,.ranking th{padding:6px 12px;border-bottom:1px solid var(--faint);text-align:left;white-space:nowrap}
+.ranking th{font-weight:600;color:var(--ink-2);font-size:12.5px}
+.ranking tr.sel td{background:var(--red-soft)}
+.ranking .nm{font-family:var(--f-hand);font-size:22px;line-height:1}
+.ranking .sc{color:var(--red);font-weight:600}
+.linkbtn{background:none;border:0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:0;font-size:13px}
+.viewing{font-family:var(--f-ui);font-size:13.5px;margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.viewing select{border:1.5px solid var(--rule);background:var(--paper);padding:4px 8px}
+
+/* questions */
+.qs{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;margin-top:22px}
+@media (min-width:860px){.qs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px;background:linear-gradient(var(--rule),var(--rule)) center top/1px 100% no-repeat}}
+.q{position:relative;min-width:0}
+.q-line{display:flex;gap:8px;align-items:baseline}
+.q-num{font-family:var(--f-display);font-weight:800;font-size:19px;position:relative;flex:none;min-width:30px}
+.q-text{font-size:16.5px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;min-width:0}
+.pts{font-family:var(--f-ui);font-size:13px;white-space:nowrap}
+.opts{list-style:none;margin:12px 0 0;padding:0 0 0 30px;display:grid;gap:4px}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:5px 6px;border-radius:4px;line-height:1.5}
+.opt:not(:disabled):hover{background:var(--red-soft)}
+.opt:disabled{cursor:default}
+.circ{flex:none;width:22px;height:22px;border:1.4px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-family:var(--f-ui);font-size:12.5px;font-weight:600;margin-top:1px;position:relative}
+.opt.on .circ{background:var(--ink);color:var(--paper)}
+.opt.key .circ::after{content:"";position:absolute;inset:-6px;border:2.4px solid var(--red);border-radius:50% 44% 52% 47%;transform:rotate(-12deg)}
+.opt .cnt{margin-left:auto;font-family:var(--f-ui);font-size:12.5px;color:var(--ink-2);white-space:nowrap;padding-left:8px}
+.opt-txt{min-width:0;overflow-wrap:anywhere}
+
+/* red pen marks */
+.mark{position:absolute;pointer-events:none;color:var(--red)}
+.mark.ok{left:-12px;top:-12px;width:54px;height:46px;border:3.5px solid var(--red);border-radius:50% 46% 52% 44%;transform:rotate(-10deg)}
+.mark.no{left:-6px;top:-18px;width:40px;height:58px}
+.mark.no::before{content:"";position:absolute;left:50%;top:0;width:4px;height:100%;background:var(--red);border-radius:2px;transform:rotate(38deg)}
+.reveal .mark{animation:pen .45s cubic-bezier(.3,1.4,.6,1) both;animation-delay:calc(var(--i) * 140ms + 200ms)}
+.reveal .score{animation:pen .6s cubic-bezier(.3,1.4,.6,1) both;animation-delay:calc(var(--n) * 140ms + 500ms)}
+@keyframes pen{from{opacity:0;transform:scale(1.8) rotate(-30deg)}}
+@media (prefers-reduced-motion:reduce){.reveal .mark,.reveal .score{animation:none}}
+
+/* game */
+.game{margin:12px 0 0 30px;border:1.5px solid var(--rule);background:var(--paper)}
+.game-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-family:var(--f-ui);font-size:12.5px;padding:6px 10px;border-bottom:1px solid var(--faint)}
+.game-head b{font-weight:600}
+.game canvas{display:block;width:100%;height:210px;touch-action:none;background:var(--paper)}
+.game-foot{display:flex;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--faint);font-family:var(--f-ui);font-size:13px;flex-wrap:wrap}
+.gbtn{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:5px 14px;border-radius:4px;font-weight:600;font-size:13px}
+.gbtn.ghost{background:transparent;color:var(--ink)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.game-res{font-family:var(--f-ui);font-size:13.5px;margin:10px 0 0 30px}
+
+/* editor */
+.ed-list{display:grid;gap:18px;margin-top:20px}
+.ed{border:1.5px solid var(--rule);padding:14px;font-family:var(--f-ui);font-size:14px;display:grid;gap:10px;min-width:0}
+.ed-top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.ed-top .no{font-family:var(--f-display);font-weight:800;font-size:19px;margin-right:4px}
+.ed select,.ed input[type=number],.ed input[type=text],.ed textarea{border:1px solid var(--faint);background:var(--paper);padding:6px 8px;border-radius:3px;min-width:0}
+.ed textarea{width:100%;resize:vertical;min-height:64px;font-family:var(--f-body);font-size:16px}
+.ed input[type=number]{width:72px}
+.ed .sp{margin-left:auto;display:flex;gap:6px}
+.ibtn{border:1px solid var(--faint);background:transparent;border-radius:4px;padding:4px 9px;font-size:13px}
+.ibtn.del{color:var(--red);border-color:var(--red)}
+.ed-opt{display:flex;gap:8px;align-items:center}
+.ed-opt input[type=text]{flex:1}
+.ed-opt label{display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer}
+.ed-opt input[type=radio]{accent-color:var(--red);width:17px;height:17px}
+.hint{color:var(--ink-2);font-size:12.5px}
+.ed-add{border:1.5px dashed var(--rule);background:transparent;padding:14px;font-family:var(--f-ui);font-weight:600;width:100%}
+.ed-sum{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ed-meta{display:flex;flex-wrap:wrap;gap:12px;font-family:var(--f-ui);font-size:14px;margin-top:14px;align-items:center}
+.ed-meta input{border:1px solid var(--faint);background:var(--paper);padding:6px 8px;min-width:0}
+.example{font-family:var(--f-ui);font-size:12px;color:var(--red);border:1px solid var(--red);padding:1px 6px;border-radius:3px}
+
+.empty{text-align:center;padding:60px 10px;font-family:var(--f-display)}
+.empty p{color:var(--ink-2);font-family:var(--f-ui);font-size:14px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:28px;border-top:1.5px solid var(--rule);padding-top:10px;font-family:var(--f-ui);font-size:12px;color:var(--ink-2)}
+.pageno{width:26px;height:26px;border:1.4px solid var(--rule);border-radius:50%;display:grid;place-items:center;color:var(--ink);font-weight:600}
+@media (max-width:600px){
+  .head-title{grid-template-columns:1fr auto}
+  .sticks{display:none}
+  .scorebox{margin-left:0}
+  .opts,.game,.game-res{margin-left:0;padding-left:0}
+}
+.login{margin-top:22px;font-family:var(--f-ui);font-size:13px}
+.login summary{cursor:pointer;color:var(--ink-2)}
+.login form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.login input{border:1px solid var(--faint);background:var(--paper);padding:6px 8px;min-width:0;flex:1 1 160px}
+.q-img{margin:12px 0 0 30px;border:1.5px solid var(--rule);background:var(--paper);padding:6px;display:inline-block;max-width:calc(100% - 30px);cursor:zoom-in}
+.q-img img{display:block;max-width:100%;max-height:340px;width:auto;height:auto;margin:0 auto}
+.q-img.wait{font-family:var(--f-ui);font-size:13px;color:var(--ink-2);padding:24px 18px;cursor:default}
+.ed-img{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ed-img img{max-height:120px;max-width:200px;border:1px solid var(--faint);display:block}
+.ed-img input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.ed-img label.ibtn{cursor:pointer}
+.lightbox{position:fixed;inset:0;z-index:50;background:rgb(10 8 9 / .86);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
+@media (max-width:600px){.q-img{margin-left:0;max-width:100%}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div id="hostbar"></div>
+<main class="sheet" id="sheet">
+  <div class="empty"><h2>시험지를 불러오는 중…</h2></div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut, getDatabase, ref, onValue, get, set, remove };
+
+(() => {
+const NUMS = ['1','2','3','4','5'];
+const GAMES = {
+  catch:{name:'빼빼로 받기', unit:'개', desc:'15초 동안 떨어지는 빼빼로를 바구니로 받으세요. 부러진 빼빼로는 −2개.', def:15},
+  timing:{name:'빼빼로 자르기', unit:'점', desc:'움직이는 칼날을 가운데 표시에 맞춰 멈추세요. 5번, 100점 만점.', def:60},
+  tap:{name:'빼빼로 연타', unit:'회', desc:'5초 동안 상자를 최대한 많이 두드리세요.', def:30},
+};
+const PHASES = [['draft','출제'],['open','시험 중'],['closed','답안 마감'],['graded','채점 완료']];
+const uid = () => 'q' + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = s => document.querySelector(s);
+const ls = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+
+function sampleQuiz(){
+  const a=uid(), b=uid(), c=uid();
+  return {
+    quiz:{ title:'빼빼로 영역', phase:'draft', example:true, questions:[
+      {id:a,type:'choice',points:10,text:'빼빼로데이는 몇 월 며칠인가?',options:['10월 10일','11월 1일','11월 11일','12월 12일','1월 11일']},
+      {id:b,type:'choice',points:10,text:'빼빼로데이 날짜가 정해진 이유로 가장 널리 알려진 것은?',options:['첫눈이 오는 날이라서','숫자 1이 빼빼로 모양을 닮아서','과자 회사 창립일이라서','수능이 끝나는 날이라서','가을 축제 기간이라서']},
+      {id:c,type:'game',points:20,text:'다음 미니게임에서 빼빼로를 15개 이상 받으시오.',game:'catch',target:15},
+    ]},
+    key:{[a]:2,[b]:1}
+  };
+}
+
+const S = {
+  images:{},
+  db:null, user:null, room:null, local:false,
+  me:null, isHost:false, isOwner:false,
+  quiz:null, key:{}, results:null,
+  nick:'', ans:{}, gm:{},
+  hostTab:'edit', viewPid:null, confirm:null, hostMsg:'',
+  pool:{}, poolDirty:false, subs:{},
+  canDb:true, saved:null, wasGraded:null, quizLoaded:false, resLoaded:false, reveal:false,
+  gameRunning:false, pendingRender:false, loading:true, slow:false,
+};
+
+/* ================= Firebase 설정 =================
+   Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사한 값을 붙여넣으세요.
+   databaseURL이 꼭 있어야 해요 (Realtime Database 사용).
+   그대로 두면 저장 없는 미리보기 모드로 열립니다. */
+const firebaseConfig = {
+  apiKey: "AIzaSyCA3thcYaGpux813eZRzCYwMU0uTnwjO2M",
+  authDomain: "mingsoon-quiz.firebaseapp.com",
+  databaseURL: "https://mingsoon-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mingsoon-quiz",
+  storageBucket: "mingsoon-quiz.firebasestorage.app",
+  messagingSenderId: "871541112949",
+  appId: "1:871541112949:web:18d6aff94f798572bdb83c",
+};
+
+/* ---------------- boot ---------------- */
+function normQuiz(d){
+  if(!d) return null;
+  const q={...d, questions:(d.questions||[]).filter(Boolean).map(x=>({...x, options: x.type==='choice' ? [0,1,2,3,4].map(k=>(x.options||[])[k]??'') : undefined}))};
+  q.questions.forEach(x=>{ if(x.options===undefined) delete x.options; });
+  return q;
+}
+function normEntries(src){ const m={}; for(const [id,e] of Object.entries(src||{})) m[id]={nick:e.nick||'',ans:e.ans||{},gm:e.gm||{},t:e.t||0, ...(e.score!==undefined?{score:e.score,marks:e.marks||{}}:{})}; return m; }
+
+async function boot(){
+  render();
+  S.nick = ls.get('pp-nick') || '';
+  try{ const a = JSON.parse(ls.get('pp-ans')||'null'); if(a){S.ans=a.ans||{}; S.gm=a.gm||{};} }catch(e){}
+  if(firebaseConfig.apiKey.startsWith('YOUR')){
+    S.local=true; S.isHost=true; S.me='preview-me'; S.quizLoaded=true; S.resLoaded=true; S.wasGraded=false;
+    const s=sampleQuiz(); S.quiz=s.quiz; S.key=s.key; S.loading=false; render(); return;
+  }
+  const timer = setTimeout(()=>{ if(S.loading){S.slow=true;render();} }, 10000);
+  const app=FB.initializeApp(firebaseConfig);
+  const auth=FB.getAuth(app); const rdb=FB.getDatabase(app);
+  S.auth=auth; S.rdb=rdb; S.db=true;
+  let started=null;
+  FB.onAuthStateChanged(auth, async u=>{
+    if(!u){ try{ await FB.signInAnonymously(auth); }catch(e){ S.loading=false; S.fatal='익명 로그인이 꺼져 있어요. Firebase 콘솔 > Authentication에서 "익명"을 사용 설정해 주세요.'; render(); } return; }
+    if(started && started!==u.uid){ location.reload(); return; }
+    if(started) return; started=u.uid;
+    S.me=u.uid; S.isHost=!u.isAnonymous; S.hostEmail=u.email||'';
+    startListeners(timer);
+  });
+}
+const R = p => FB.ref(S.rdb,p);
+function startListeners(timer){
+  let first=true;
+  FB.onValue(R('quiz'), snap=>{
+    const d=normQuiz(snap.val());
+    if(S.isHost && !first && S.quiz) return; // 감독관 화면은 자기 편집본이 기준
+    if(S.isHost && !d){ if(!S.quiz){ const s=sampleQuiz(); S.quiz=s.quiz; S.key=s.key; } }
+    else S.quiz=d;
+    if(first && S.isHost && d){ FB.get(R('key')).then(k=>{ S.key={...(k.val()?.answers||{})}; render(); }).catch(()=>{}); }
+    first=false; S.loading=false; S.quizLoaded=true; clearTimeout(timer);
+    phaseChanged(); render();
+  }, err=>{ S.loading=false; S.fatal='데이터를 읽지 못했어요. Realtime Database 보안 규칙을 확인해 주세요. ('+err.code+')'; render(); });
+  FB.onValue(R('images'), snap=>{ S.images=snap.val()||{}; render(); }, ()=>{});
+  FB.onValue(R('results'), snap=>{
+    const v=snap.val(); S.results = v ? {...v, entries:normEntries(v.entries), key:v.key||{}} : null;
+    S.resLoaded=true; phaseChanged(); render();
+  }, ()=>{ S.resLoaded=true; });
+  if(S.isHost){
+    FB.onValue(R('subs'), snap=>{ S.subs=normEntries(snap.val()); renderBar(); softRender(); }, ()=>{});
+  } else {
+    FB.get(R('subs/'+S.me)).then(s=>{ const d=s.val(); if(d){ if(!S.nick) S.nick=d.nick||''; S.ans={...(d.ans||{}),...S.ans}; S.gm={...(d.gm||{}),...S.gm}; render(); } }).catch(()=>{});
+  }
+}
+
+function phaseChanged(){
+  if(!S.quizLoaded || !S.resLoaded) return;
+  const g = S.quiz?.phase==='graded' && !!S.results?.graded;
+  if(g && S.wasGraded===false) S.reveal=true;
+  S.wasGraded = g;
+}
+
+/* ---------------- host persistence ---------------- */
+let saveT=null;
+function scheduleSave(){ if(S.local) return; clearTimeout(saveT); saveT=setTimeout(saveQuiz,600); }
+async function saveQuiz(){
+  if(S.local) return;
+  try{
+    await FB.set(R('quiz'), JSON.parse(JSON.stringify(S.quiz)));
+    await FB.set(R('key'), {answers:S.key});
+  }catch(e){ S.hostMsg='저장하지 못했어요. 보안 규칙의 감독관 UID가 지금 로그인한 계정과 같은지 확인해 주세요.'; renderBar(); }
+}
+async function setPhase(ph){ S.quiz.phase=ph; clearTimeout(saveT); await saveQuiz(); phaseChanged(); render(); }
+function mergedEntries(){ const m={}; for(const [id,e] of Object.entries(S.subs)) if(e.nick) m[id]=e; return m; }
+async function writeResults(v){ if(S.local) S.results=v; else if(v===null) await FB.remove(R('results')); else await FB.set(R('results'),v); }
+async function hostAction(act){
+  S.hostMsg='';
+  try{
+    if(act==='asviewer'){ S.isHost=false; render(); return; }
+    if(act==='logout'){ await FB.signOut(S.auth); location.reload(); return; }
+    if(act==='start'){
+      const qs=S.quiz.questions;
+      if(!qs.length){ S.hostMsg='문제를 1개 이상 만들어 주세요.'; return renderBar(); }
+      const bad=qs.findIndex(q=>q.type==='choice' && (S.key[q.id]===undefined || !q.text.trim() || q.options.some(o=>!o.trim())));
+      if(bad>=0){ S.hostMsg=`${bad+1}번 문제의 지문, 보기 5개, 정답을 모두 채워 주세요.`; return renderBar(); }
+      delete S.quiz.example;
+      await setPhase('open');
+    }
+    if(act==='close'){
+      await setPhase('closed'); // 먼저 잠가서 보안 규칙상 응시자 쓰기를 막음
+      await writeResults({graded:false,entries:mergedEntries(),closedAt:Date.now()});
+    }
+    if(act==='reopen'){ await writeResults(null); await setPhase('open'); }
+    if(act==='grade'){
+      const base = S.results?.entries || mergedEntries();
+      const qs=S.quiz.questions; let total=0; qs.forEach(q=>total+=Number(q.points)||0);
+      const entries={};
+      for(const [id,e] of Object.entries(base)){
+        let score=0; const marks={};
+        qs.forEach(q=>{
+          const ok = q.type==='game' ? (Number(e.gm?.[q.id])||0) >= (Number(q.target)||0) : e.ans?.[q.id]===S.key[q.id];
+          marks[q.id]=ok?1:0; if(ok) score+=Number(q.points)||0;
+        });
+        entries[id]={...e,score,marks};
+      }
+      S.wasGraded=false;
+      await writeResults({graded:true,entries,key:S.key,total,gradedAt:Date.now()});
+      await setPhase('graded');
+    }
+    if(act==='ungrade'){
+      const entries={}; for(const [id,e] of Object.entries(S.results?.entries||{})){ const {score,marks,...rest}=e; entries[id]=rest; }
+      await writeResults({graded:false,entries});
+      await setPhase('closed');
+    }
+    if(act==='reset'){
+      if(S.confirm!=='reset'){ S.confirm='reset'; S.hostMsg='한 번 더 누르면 응시자 답안과 채점 결과를 모두 지우고 출제 단계로 돌아갑니다. 문제는 남아 있어요.'; return renderBar(); }
+      S.confirm=null;
+      if(!S.local){ await FB.remove(R('results')); await FB.remove(R('subs')); }
+      S.subs={}; S.results=null; S.viewPid=null; S.hostTab='edit';
+      await setPhase('draft');
+    }
+  }catch(e){ S.hostMsg='처리하지 못했어요: '+(e?.message||e?.code||'알 수 없는 오류'); }
+  if(act!=='reset') S.confirm=null;
+  renderBar();
+}
+
+/* ---------------- participant persistence ---------------- */
+let subT=null;
+function pushAnswers(){
+  ls.set('pp-ans',JSON.stringify({ans:S.ans,gm:S.gm}));
+  if(S.local){ S.subs[S.me]={nick:S.nick,ans:{...S.ans},gm:{...S.gm},t:Date.now()}; S.saved=new Date(); statusUpdate(); return; }
+  clearTimeout(subT);
+  subT=setTimeout(async()=>{
+    try{ await FB.set(R('subs/'+S.me),{nick:S.nick.slice(0,20),ans:S.ans,gm:S.gm,t:Date.now()}); S.saved=new Date(); S.saveErr=false; }
+    catch(e){ S.saveErr=true; }
+    statusUpdate();
+  },400);
+}
+
+/* ---------------- question images ---------------- */
+async function shrinkImage(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.src=url; });
+    let max=1100, q=0.82, out='';
+    for(let tries=0; tries<5; tries++){
+      const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+      const w=Math.round(img.naturalWidth*sc), h=Math.round(img.naturalHeight*sc);
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(img,0,0,w,h);
+      out=c.toDataURL('image/jpeg',q);
+      if(out.length<450000) break;
+      max=Math.round(max*0.8); q=Math.max(0.6,q-0.08);
+    }
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+async function setQuestionImage(qq,file){
+  if(!file || !file.type.startsWith('image/')){ S.hostMsg='사진 파일(JPG, PNG 등)만 넣을 수 있어요.'; renderBar(); return; }
+  S.hostMsg='사진을 줄이는 중…'; renderBar();
+  let data;
+  try{ data=await shrinkImage(file); }catch(e){ S.hostMsg='이 사진은 열 수 없어요. 다른 파일로 해 주세요.'; renderBar(); return; }
+  const old=qq.img; const id='i'+Math.random().toString(36).slice(2,9);
+  try{
+    if(!S.local) await FB.set(R('images/'+id),data);
+    S.images={...S.images,[id]:data};
+    qq.img=id; scheduleSave();
+    if(old) removeImage(old);
+    S.hostMsg='';
+  }catch(e){ S.hostMsg='사진을 저장하지 못했어요. 보안 규칙에 images 항목이 있는지 확인해 주세요.'; }
+  render();
+}
+function removeImage(id){
+  const m={...S.images}; delete m[id]; S.images=m;
+  if(!S.local) FB.remove(R('images/'+id)).catch(()=>{});
+}
+function imgHtml(q){
+  if(!q.img) return '';
+  const src=S.images[q.img];
+  return src ? `<figure class="q-img" data-zoom="${esc(q.img)}"><img src="${src}" alt="${esc(q.text.slice(0,40))} 관련 사진"></figure>` : `<div class="q-img wait">사진을 불러오는 중…</div>`;
+}
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-zoom]');
+  if(f){ const src=S.images[f.dataset.zoom]; if(!src) return; const lb=document.createElement('div'); lb.className='lightbox'; lb.innerHTML=`<img src="${src}" alt="">`; lb.onclick=()=>lb.remove(); document.body.appendChild(lb); return; }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelector('.lightbox')?.remove(); });
+
+/* ---------------- host login ---------------- */
+function loginBox(){
+  if(S.local || S.isHost) return '';
+  return `<details class="login"><summary>감독관 로그인</summary>
+    <form id="login-form"><input id="lg-email" type="email" placeholder="감독관 이메일" autocomplete="username" required>
+    <input id="lg-pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+    <button class="gbtn" type="submit">로그인</button><span id="lg-msg" class="hint"></span></form></details>`;
+}
+document.addEventListener('submit',async e=>{
+  if(e.target.id!=='login-form') return; e.preventDefault();
+  const m=$('#lg-msg'); m.textContent='로그인 중…';
+  try{ await FB.signInWithEmailAndPassword(S.auth,$('#lg-email').value,$('#lg-pw').value); location.reload(); }
+  catch(err){ m.textContent='이메일이나 비밀번호가 맞지 않아요.'; }
+});
+
+/* ---------------- rendering ---------------- */
+let srT=null;
+function softRender(){ if(!(S.isHost && S.quiz?.phase!=='draft') || srT) return; srT=setTimeout(()=>{ srT=null; render(); },1000); }
+function render(){
+  if(S.gameRunning){ S.pendingRender=true; return; }
+  renderBar(); renderSheet();
+}
+
+function renderBar(){
+  const el=$('#hostbar');
+  if(S.local && !S.isHost){ el.innerHTML=`<div class="bar"><span class="who">미리보기 · 시청자 화면</span><span style="opacity:.75">시청자에게는 이 위쪽 바가 보이지 않아요.</span><div class="acts"><button class="bbtn main" data-act="ashost">감독관 화면으로</button></div></div>`; return; }
+  if(!S.isHost || !S.quiz){ el.innerHTML=''; return; }
+  const ph=S.quiz.phase; const idx=PHASES.findIndex(p=>p[0]===ph);
+  const steps=PHASES.map((p,i)=>`<span class="step ${i===idx?'now':i<idx?'done':''}">${p[1]}</span>`).join('');
+  const b=(act,label,cls='')=>`<button class="bbtn ${cls}" data-act="${act}">${label}</button>`;
+  let acts='';
+  if(ph==='draft') acts=b('start','시험 시작','main');
+  if(ph==='open') acts=b('close','답안 마감','main');
+  if(ph==='closed') acts=b('grade','채점하기','main')+b('reopen','마감 취소');
+  if(ph==='graded') acts=b('ungrade','채점 취소');
+  if(ph!=='draft') acts+=b('reset', S.confirm==='reset'?'정말 초기화':'새 시험 (초기화)','danger');
+  const tabs = ph==='draft' ? `<div class="tabs"><button class="tab ${S.hostTab==='edit'?'on':''}" data-tab="edit">문제 편집</button><button class="tab ${S.hostTab==='preview'?'on':''}" data-tab="preview">시험지 미리보기</button></div>` : '';
+  let roster='';
+  if(ph!=='draft'){
+    const src = S.results?.entries || mergedEntries();
+    const list = Object.entries(src);
+    const nQ = S.quiz.questions.length;
+    roster = `<div class="roster"><span>응시자 ${list.length}명</span>`+ list.slice(0,60).map(([id,e])=>{
+      const done = S.quiz.questions.filter(q=> q.type==='game' ? e.gm?.[q.id]!==undefined : e.ans?.[q.id]!==undefined).length;
+      return `<span class="chip"><b>${esc(e.nick)}</b> ${e.score!==undefined?e.score+'점':done+'/'+nQ}</span>`;
+    }).join('') + (list.length>60?`<span class="chip">외 ${list.length-60}명</span>`:'') + `</div>`;
+  }
+  el.innerHTML=`<div class="bar"><span class="who">감독관${S.local?' · 미리보기 (저장 안 됨)':' · '+esc(S.hostEmail)}</span><div class="steps">${steps}</div>${tabs}<div class="acts">${acts}</div>${S.local?b('asviewer','시청자 화면 보기'):b('logout','로그아웃')}<p class="msg">${esc(S.hostMsg)}</p>${roster}</div>`;
+}
+$('#hostbar').addEventListener('click',e=>{
+  if(e.target.closest('[data-act="ashost"]')){ S.isHost=true; render(); return; }
+  const a=e.target.closest('[data-act]'); if(a){ a.disabled=true; hostAction(a.dataset.act).then(()=>{}); return; }
+  const t=e.target.closest('[data-tab]'); if(t){ S.hostTab=t.dataset.tab; render(); }
+});
+
+function examId(){
+  let h=0; for(const c of String(S.me||'0')) h=(h*31+c.charCodeAt(0))>>>0;
+  return String(h%100000000).padStart(8,'0');
+}
+
+function viewedEntry(){
+  const r=S.results; if(!r) return null;
+  const id=S.viewPid ?? (r.entries?.[S.me] ? S.me : null);
+  return id && r.entries?.[id] ? {id,...r.entries[id]} : null;
+}
+
+function header(){
+  const q=S.quiz; const ph=q?.phase;
+  const graded = ph==='graded' && S.results?.graded;
+  const ent = graded ? viewedEntry() : null;
+  const hostView = S.isHost;
+  const nickVal = ent ? ent.nick : (hostView ? '감독관' : S.nick);
+  const nickDisabled = hostView || ent || ph!=='open' && ph!=='draft' ? 'disabled' : '';
+  const scoreHtml = ent ? `<div class="scorebox"><span class="lbl">점수</span><span class="score" style="--n:${q.questions.length}">${ent.score}<small>/${S.results.total}</small></span></div>` : '';
+  return `<header>
+    <div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div>
+    <div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">${esc(q?.title||'빼빼로 영역')}</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div>
+    <div class="head-meta">
+      <label class="field"><span>성명</span><input id="nick" maxlength="20" placeholder="닉네임" value="${esc(nickVal)}" ${nickDisabled} autocomplete="off"></label>
+      <div class="field"><span>수험 번호</span><div class="idbox">${(hostView?'00000000':examId()).split('').map(d=>`<i>${d}</i>`).join('')}</div></div>
+      ${scoreHtml}
+    </div>
+    ${statusLine()}
+  </header>`;
+}
+
+function statusLine(){
+  const ph=S.quiz?.phase;
+  if(S.isHost) {
+    if(S.local) return `<div class="notice">Firebase 설정값이 아직 없어서 저장 없는 미리보기로 열렸어요. 설정을 마치면 시청자에게는 감독관 바 없이 응시자 화면만 보여요. 위쪽 '시청자 화면 보기'로 미리 확인할 수 있어요.</div>`;
+    return '';
+  }
+  let t='';
+  if(ph==='open'){
+    if(!S.nick.trim()) t='<b>성명란에 닉네임을 먼저 적어 주세요.</b> 그다음 답을 고를 수 있어요.';
+    else if(S.saveErr) t='<b>답안을 저장하지 못했어요.</b> 인터넷 연결을 확인하거나 감독관이 마감했는지 확인해 주세요.';
+    else if(S.saved) t=`답안이 자동 제출되었습니다 · ${S.saved.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+    else t='답을 고르면 자동으로 제출돼요. 감독관이 마감하기 전까지 고칠 수 있습니다.';
+  }
+  if(ph==='closed') t='<b>답안이 마감되었습니다.</b> 채점을 기다리는 중이에요.';
+  if(ph==='graded') t= S.results?.entries?.[S.me] ? '채점이 끝났습니다.' : '채점이 끝났습니다. 아래 성적표에서 다른 응시자의 답안지를 볼 수 있어요.';
+  return `<div class="status" id="status">${t}</div>`;
+}
+function statusUpdate(){ const s=$('#status'); if(s){ const tmp=document.createElement('div'); tmp.innerHTML=statusLine(); s.replaceWith(tmp.firstElementChild||document.createTextNode('')); } }
+
+function ranking(){
+  const r=S.results; if(!r?.graded) return '';
+  const rows=Object.entries(r.entries||{}).sort((a,b)=>b[1].score-a[1].score || a[1].nick.localeCompare(b[1].nick));
+  let rank=0, prev=null;
+  const cur=viewedEntry()?.id;
+  const trs=rows.map(([id,e],i)=>{ if(e.score!==prev){rank=i+1;prev=e.score;}
+    const ok=Object.values(e.marks||{}).filter(Boolean).length;
+    return `<tr class="${id===cur?'sel':''}"><td>${rank}</td><td class="nm">${esc(e.nick)}${id===S.me?' (나)':''}</td><td class="sc">${e.score}점</td><td>${ok}/${S.quiz.questions.length}문항</td><td><button class="linkbtn" data-view="${esc(id)}">답안지 보기</button></td></tr>`;
+  }).join('');
+  return `<section class="ranking"><h2>성적 일람표 <small>응시자 ${rows.length}명 · 총점 ${r.total}점</small></h2>
+    <div class="rank-wrap"><table><thead><tr><th>석차</th><th>성명</th><th>점수</th><th>맞힌 문항</th><th></th></tr></thead><tbody>${trs||'<tr><td colspan="5">응시자가 없어요.</td></tr>'}</tbody></table></div></section>
+    <div class="viewing">${cur?`<span>지금 보는 답안지: <b>${esc(r.entries[cur].nick)}</b></span> <button class="linkbtn" data-view="__key">정답지로 보기</button>`:'<span>지금 보는 화면: <b>정답지</b></span>'}</div>`;
+}
+
+function renderSheet(){
+  const sh=$('#sheet');
+  if(S.loading){ sh.innerHTML=`<div class="empty"><h2>시험지를 불러오는 중…</h2>${S.slow?'<p>연결이 늦어지고 있어요. 잠시만 기다려 주세요.</p>':''}</div>`; return; }
+  if(S.fatal){ sh.innerHTML=header0()+`<div class="empty"><h2>연결 설정을 확인해 주세요</h2><p>${esc(S.fatal)}</p></div>`; return; }
+  const q=S.quiz;
+  if(!q){ sh.innerHTML=header0()+`<div class="empty"><h2>아직 시험지가 배부되지 않았습니다</h2><p>감독관이 시험을 시작하면 이 화면에 문제가 나타나요.</p></div>`+footer(); return; }
+  if(!S.isHost && q.phase==='draft'){ sh.innerHTML=header()+`<div class="empty"><h2>시험 시작 전입니다</h2><p>성명란에 닉네임을 적고 기다려 주세요. 감독관이 시험을 시작하면 문제가 나타나요.</p></div>`+footer(); bindHeader(); return; }
+  if(S.isHost && q.phase==='draft' && S.hostTab==='edit'){ sh.innerHTML=header()+editor()+footer(); bindHeader(); bindEditor(); return; }
+  sh.innerHTML = header() + ranking() + `<div class="qs ${S.reveal?'reveal':''}" id="qs"></div>` + footer();
+  const qs=$('#qs'); q.questions.forEach((qq,i)=>qs.appendChild(questionEl(qq,i)));
+  bindHeader();
+  S.reveal=false;
+}
+function header0(){ return `<header><div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div><div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">빼빼로 영역</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div></header>`; }
+function footer(){ return loginBox()+`<div class="foot"><span>이 문제지에 관한 저작권은 빼빼로데이 출제위원회에 있습니다.</span><span class="pageno">1</span><span>11월 11일 시행</span></div>`; }
+
+function bindHeader(){
+  const n=$('#nick'); if(!n||n.disabled) return;
+  n.addEventListener('input',()=>{ S.nick=n.value.trim(); ls.set('pp-nick',S.nick); statusUpdate(); });
+  n.addEventListener('change',()=>{ if(S.quiz?.phase==='open'){ pushAnswers(); } render(); });
+  $('#sheet').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{ S.viewPid=b.dataset.view==='__key'?'__key':b.dataset.view; render(); });
+}
+
+/* one question on the paper */
+function questionEl(q,i){
+  const ph=S.quiz.phase; const r=S.results;
+  const graded = ph==='graded' && r?.graded;
+  const ent = (ph==='closed'||graded) ? viewedEntry() : null;
+  const host=S.isHost;
+  const key = graded ? r.key : (host ? S.key : {});
+  // whose answers to show
+  let ans, gm;
+  if(ent){ ans=ent.ans||{}; gm=ent.gm||{}; }
+  else if(host || (graded && S.viewPid==='__key')){ ans={}; gm={}; }
+  else if(graded && !r.entries?.[S.me]){ ans={}; gm={}; }
+  else { ans=S.ans; gm=S.gm; }
+  const canAnswer = !host && ph==='open' && !!S.nick.trim();
+  // stats for host
+  let counts=null;
+  if(host && ph!=='draft'){ counts=[0,0,0,0,0]; const src=r?.entries||mergedEntries(); Object.values(src).forEach(e=>{ const a=e.ans?.[q.id]; if(a!==undefined) counts[a]++; }); }
+
+  const el=document.createElement('article'); el.className='q'; el.style.setProperty('--i',i);
+  let mark='';
+  if(graded && ent){ const ok=ent.marks?.[q.id]; mark=`<span class="mark ${ok?'ok':'no'}" aria-label="${ok?'정답':'오답'}"></span>`; }
+  el.innerHTML=`<div class="q-line"><span class="q-num">${mark}${i+1}.</span><div class="q-text">${esc(q.text)} <span class="pts">[${Number(q.points)||0}점]</span></div></div>${imgHtml(q)}`;
+  if(q.type==='choice'){
+    const ol=document.createElement('ol'); ol.className='opts';
+    q.options.forEach((o,k)=>{
+      const li=document.createElement('li');
+      const isKey = key && key[q.id]===k && (graded || host);
+      li.innerHTML=`<button class="opt ${ans[q.id]===k?'on':''} ${isKey?'key':''}" ${canAnswer?'':'disabled'} aria-pressed="${ans[q.id]===k}"><span class="circ">${NUMS[k]}</span><span class="opt-txt">${esc(o)}</span>${counts?`<span class="cnt">${counts[k]}명</span>`:''}</button>`;
+      li.firstElementChild.onclick=()=>{ if(!canAnswer) return; S.ans[q.id]=k; ol.querySelectorAll('.opt').forEach((b,j)=>{b.classList.toggle('on',j===k);b.setAttribute('aria-pressed',j===k);}); pushAnswers(); };
+      ol.appendChild(li);
+    });
+    el.appendChild(ol);
+  } else {
+    const g=GAMES[q.game]||GAMES.catch;
+    const best = gm[q.id];
+    if(ph==='closed'||graded){
+      const d=document.createElement('div'); d.className='game-res';
+      if(host && !ent){ const src=r?.entries||{}; const vals=Object.values(src).map(e=>e.gm?.[q.id]).filter(v=>v!==undefined); const pass=vals.filter(v=>v>=q.target).length; d.textContent=`${g.name} · 목표 ${q.target}${g.unit} · 달성 ${pass}명 / 기록 제출 ${vals.length}명`; }
+      else d.innerHTML=`${g.name} · 목표 <b>${q.target}${g.unit}</b> · ${ent||ph==='closed'?`기록 <b>${best??'없음'}${best!==undefined?g.unit:''}</b>`:'정답지에는 기록이 없어요'}`;
+      el.appendChild(d);
+    } else {
+      el.appendChild(gameBox(q, {
+        best, playable: host || canAnswer, test: host,
+        lockedMsg: !S.nick.trim() ? '닉네임을 적으면 플레이할 수 있어요' : '지금은 플레이할 수 없어요',
+        onScore: sc => { if(host) return; if(best===undefined || sc>best){ S.gm[q.id]=sc; pushAnswers(); } }
+      }));
+    }
+  }
+  return el;
+}
+
+/* ---------------- editor ---------------- */
+function editor(){
+  const q=S.quiz; const total=q.questions.reduce((s,x)=>s+(Number(x.points)||0),0);
+  return `<div class="ed-meta"><label>영역 이름 <input type="text" id="ed-title" value="${esc(q.title)}" maxlength="30"></label>${q.example?'<span class="example">예시 문제 · 자유롭게 고치거나 지우세요</span>':''}</div>
+  <div class="ed-list" id="ed-list">${q.questions.map(edCard).join('')}</div>
+  <div class="ed-sum"><span>총 ${q.questions.length}문항 · 총점 ${total}점</span><button class="ibtn" id="ed-even">배점을 100점에 맞추기</button></div>
+  <div style="display:grid;gap:8px;margin-top:12px"><button class="ed-add" id="ed-add">+ 객관식 문제 추가</button><button class="ed-add" id="ed-addg">+ 미니게임 문제 추가</button></div>`;
+}
+function edCard(q,i){
+  const n=S.quiz.questions.length;
+  const body = q.type==='choice'
+    ? q.options.map((o,k)=>`<div class="ed-opt"><label><input type="radio" name="k-${q.id}" data-f="key" data-k="${k}" ${S.key[q.id]===k?'checked':''}> 정답</label><span class="circ">${NUMS[k]}</span><input type="text" id="o-${q.id}-${k}" data-f="opt" data-k="${k}" value="${esc(o)}" placeholder="보기 ${k+1}"></div>`).join('')
+      + `<span class="hint">정답 라디오를 눌러 정답을 표시하세요. 정답은 채점 전까지 응시자에게 보이지 않아요.</span>`
+    : `<div class="ed-top"><label>게임 <select data-f="game">${Object.entries(GAMES).map(([k,g])=>`<option value="${k}" ${q.game===k?'selected':''}>${g.name}</option>`).join('')}</select></label>
+       <label>목표 <input type="number" min="0" data-f="target" value="${q.target}"> ${GAMES[q.game].unit} 이상이면 정답</label></div>
+       <span class="hint">${GAMES[q.game].desc}</span><div class="ed-game" data-game="${q.id}"></div>`;
+  return `<div class="ed" data-q="${q.id}">
+    <div class="ed-top"><span class="no">${i+1}.</span>
+      <label>유형 <select data-f="type"><option value="choice" ${q.type==='choice'?'selected':''}>객관식 (5지선다)</option><option value="game" ${q.type==='game'?'selected':''}>미니게임</option></select></label>
+      <label>배점 <input type="number" min="0" data-f="points" value="${q.points}"> 점</label>
+      <span class="sp"><button class="ibtn" data-mv="-1" ${i===0?'disabled':''} aria-label="위로">↑</button><button class="ibtn" data-mv="1" ${i===n-1?'disabled':''} aria-label="아래로">↓</button><button class="ibtn del" data-del>삭제</button></span>
+    </div>
+    <textarea id="t-${q.id}" data-f="text" placeholder="문제 지문을 적으세요">${esc(q.text)}</textarea>
+    <div class="ed-img">${q.img && S.images[q.img] ? `<img src="${S.images[q.img]}" alt="">` : ''}
+      <label class="ibtn" for="f-${q.id}">${q.img?'사진 바꾸기':'+ 사진 넣기 (선택)'}</label><input type="file" id="f-${q.id}" accept="image/*" data-f="img">
+      ${q.img?'<button class="ibtn del" data-imgdel>사진 빼기</button>':'<span class="hint">필요한 문제에만 넣으세요. 큰 사진은 자동으로 줄여요.</span>'}</div>
+    ${body}
+  </div>`;
+}
+function newQ(type){ const id=uid(); return type==='game' ? {id,type:'game',points:10,text:'다음 미니게임에서 목표 기록을 달성하시오.',game:'catch',target:15} : {id,type:'choice',points:10,text:'',options:['','','','','']}; }
+function bindEditor(){
+  const q=S.quiz;
+  $('#ed-title').oninput=e=>{ q.title=e.target.value; $('.subject').textContent=q.title||'빼빼로 영역'; scheduleSave(); };
+  $('#ed-add').onclick=()=>{ q.questions.push(newQ('choice')); scheduleSave(); render(); };
+  $('#ed-addg').onclick=()=>{ q.questions.push(newQ('game')); scheduleSave(); render(); };
+  $('#ed-even').onclick=()=>{ const n=q.questions.length; if(!n) return; const base=Math.floor(100/n); let rem=100-base*n; q.questions.forEach((x,i)=>x.points=base+(i>=n-rem?1:0)); scheduleSave(); render(); };
+  const list=$('#ed-list');
+  list.addEventListener('input',e=>{
+    const card=e.target.closest('[data-q]'); if(!card) return; const qq=q.questions.find(x=>x.id===card.dataset.q); const f=e.target.dataset.f;
+    if(f==='text') qq.text=e.target.value;
+    if(f==='opt') qq.options[+e.target.dataset.k]=e.target.value;
+    if(f==='points'){ qq.points=Math.max(0,Number(e.target.value)||0); updSum(); }
+    if(f==='target') qq.target=Math.max(0,Number(e.target.value)||0);
+    scheduleSave();
+  });
+  list.addEventListener('change',e=>{
+    const card=e.target.closest('[data-q]'); if(!card) return; const qq=q.questions.find(x=>x.id===card.dataset.q); const f=e.target.dataset.f;
+    if(f==='key'){ S.key[qq.id]=+e.target.dataset.k; scheduleSave(); }
+    if(f==='img'){ const file=e.target.files?.[0]; e.target.value=''; setQuestionImage(qq,file); }
+    if(f==='type'){ const nq=newQ(e.target.value); nq.id=qq.id; if(qq.img) nq.img=qq.img; nq.points=qq.points; nq.text=qq.text||nq.text; Object.keys(qq).forEach(k=>delete qq[k]); Object.assign(qq,nq); if(nq.type==='game') delete S.key[qq.id]; scheduleSave(); render(); }
+    if(f==='game'){ qq.game=e.target.value; qq.target=GAMES[qq.game].def; scheduleSave(); render(); }
+  });
+  list.addEventListener('click',e=>{
+    const card=e.target.closest('[data-q]'); if(!card) return; const i=q.questions.findIndex(x=>x.id===card.dataset.q);
+    if(e.target.closest('[data-imgdel]')){ const qq=q.questions[i]; const id=qq.img; delete qq.img; if(id) removeImage(id); scheduleSave(); render(); return; }
+    if(e.target.closest('[data-del]')){ const [r]=q.questions.splice(i,1); delete S.key[r.id]; if(r.img) removeImage(r.img); scheduleSave(); render(); }
+    const mv=e.target.closest('[data-mv]'); if(mv){ const j=i+Number(mv.dataset.mv); [q.questions[i],q.questions[j]]=[q.questions[j],q.questions[i]]; scheduleSave(); render(); }
+  });
+  list.querySelectorAll('[data-game]').forEach(slot=>{
+    const qq=q.questions.find(x=>x.id===slot.dataset.game);
+    slot.appendChild(gameBox(qq,{playable:true,test:true}));
+  });
+  function updSum(){ const total=q.questions.reduce((s,x)=>s+(Number(x.points)||0),0); $('.ed-sum span').textContent=`총 ${q.questions.length}문항 · 총점 ${total}점`; }
+}
+
+/* ---------------- mini games ---------------- */
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function gameBox(q,opt){
+  const g=GAMES[q.game]||GAMES.catch;
+  const box=document.createElement('div'); box.className='game';
+  box.innerHTML=`<div class="game-head"><span><b>${g.name}</b> · ${esc(g.desc)}</span><span>목표 <b>${q.target}${g.unit}</b></span></div>
+    <canvas tabindex="0" aria-label="${g.name} 게임 화면"></canvas>
+    <div class="game-foot"><button class="gbtn">${opt.playable?'게임 시작':'잠김'}</button><button class="gbtn ghost act" hidden>${q.game==='timing'?'멈춰! (스페이스)':'두드리기 (스페이스)'}</button><span class="rec"></span></div>`;
+  const cv=box.querySelector('canvas'), start=box.querySelector('.gbtn'), act=box.querySelector('.act'), rec=box.querySelector('.rec');
+  let best=opt.best;
+  const showRec=()=>{ rec.innerHTML = opt.test ? '감독관 시험 플레이 · 기록은 저장되지 않아요' : !opt.playable ? esc(opt.lockedMsg) : best!==undefined ? `내 최고 기록 <b>${best}${g.unit}</b> ${best>=q.target?'· 목표 달성':'· 다시 도전할 수 있어요'}` : '여러 번 도전할 수 있고, 최고 기록이 제출돼요.'; };
+  showRec();
+  start.disabled=!opt.playable;
+  let ctx, W, H;
+  const fit=()=>{ const r=cv.getBoundingClientRect(); const d=window.devicePixelRatio||1; W=r.width||300; H=r.height||210; cv.width=W*d; cv.height=H*d; ctx=cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); };
+  const idle=()=>{ fit(); const C=colors(); ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H); drawStick(ctx,W/2-30,H/2-40,0.4,C); drawStick(ctx,W/2+18,H/2-44,-0.2,C); ctx.fillStyle=C.ink2; ctx.font='13px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText(opt.playable?'게임 시작을 누르세요':'',W/2,H-18); };
+  requestAnimationFrame(idle);
+  start.onclick=()=>{
+    if(S.gameRunning) return; S.gameRunning=true; start.disabled=true; fit(); cv.focus();
+    const runner={catch:runCatch,timing:runTiming,tap:runTap}[q.game]||runCatch;
+    if(q.game!=='catch'){ act.hidden=false; }
+    runner(cv,ctx,W,H,act,score=>{
+      S.gameRunning=false; start.disabled=false; start.textContent='다시 하기'; act.hidden=true;
+      if(!opt.test && (best===undefined||score>best)) best=score;
+      opt.onScore && opt.onScore(score);
+      rec.innerHTML = `이번 기록 <b>${score}${g.unit}</b> · ` + (opt.test?'시험 플레이':'최고 '+best+g.unit);
+      setTimeout(()=>{ if(S.pendingRender){S.pendingRender=false; render();} else showRec(); },1800);
+    });
+  };
+  return box;
+}
+function colors(){ return {paper:css('--paper'),ink:css('--ink'),ink2:css('--ink-2'),red:css('--red'),choco:css('--choco'),bis:css('--biscuit'),faint:css('--faint'),pink:css('--pink')}; }
+function drawStick(c,x,y,rot,C,len=70,broken=false){
+  c.save(); c.translate(x,y); c.rotate(rot);
+  c.lineCap='round';
+  c.strokeStyle=C.bis; c.lineWidth=7; c.beginPath(); c.moveTo(0,len*0.78); c.lineTo(0,len); c.stroke();
+  c.strokeStyle=broken?C.ink2:C.choco; c.beginPath(); c.moveTo(0,broken?len*0.45:0); c.lineTo(0,len*0.78); c.stroke();
+  if(broken){ c.strokeStyle=C.ink2; c.beginPath(); c.moveTo(4,0); c.lineTo(-3,len*0.3); c.stroke(); }
+  c.restore();
+}
+function hud(ctx,W,txt,C){ ctx.fillStyle=C.ink; ctx.font='600 14px '+css('--f-ui'); ctx.textAlign='left'; ctx.fillText(txt,10,20); }
+function keyHandler(cv,fn){ const h=e=>fn(e); cv.addEventListener('keydown',h); return ()=>cv.removeEventListener('keydown',h); }
+
+function runCatch(cv,ctx,W,H,act,done){
+  const C=colors(); const T=15000; const t0=performance.now(); let last=t0, spawn=0, score=0, bx=W/2, items=[], keys={};
+  const move=e=>{ const r=cv.getBoundingClientRect(); bx=Math.max(30,Math.min(W-30,e.clientX-r.left)); };
+  cv.addEventListener('pointermove',move); cv.addEventListener('pointerdown',move);
+  const un=keyHandler(cv,e=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight'){keys[e.key]=e.type==='keydown';e.preventDefault();} });
+  const up=e=>{ keys[e.key]=false; }; cv.addEventListener('keyup',up);
+  const loop=now=>{
+    const dt=Math.min(50,now-last); last=now; const el=now-t0;
+    if(keys.ArrowLeft) bx=Math.max(30,bx-dt*0.5); if(keys.ArrowRight) bx=Math.min(W-30,bx+dt*0.5);
+    spawn-=dt; if(spawn<=0){ spawn=380+Math.random()*260; items.push({x:15+Math.random()*(W-30),y:-60,v:0.12+Math.random()*0.1+el/T*0.12,bad:Math.random()<0.22,r:(Math.random()-.5)*.6}); }
+    ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H);
+    items.forEach(it=>{ it.y+=it.v*dt; drawStick(ctx,it.x,it.y,it.r,C,46,it.bad); });
+    items=items.filter(it=>{ const tip=it.y+40; if(tip>H-34 && tip<H-8 && Math.abs(it.x-bx)<34){ score+=it.bad?-2:1; if(score<0)score=0; return false; } return it.y<H; });
+    ctx.fillStyle=C.red; ctx.fillRect(bx-32,H-26,64,20); ctx.fillStyle=C.paper; ctx.font='600 11px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText('바구니',bx,H-12);
+    hud(ctx,W,`${score}개 · ${Math.ceil((T-el)/1000)}초`,C);
+    if(el<T) requestAnimationFrame(loop); else { cv.removeEventListener('pointermove',move); cv.removeEventListener('pointerdown',move); cv.removeEventListener('keyup',up); un(); endScreen(ctx,W,H,`${score}개`,C); done(score); }
+  };
+  requestAnimationFrame(loop);
+}
+function runTiming(cv,ctx,W,H,act,done){
+  const C=colors(); let round=0, total=0, t0=performance.now(), stopped=false, msg='', pos=0, results=[];
+  const speed=()=>0.0011+round*0.00035;
+  const stop=()=>{ if(stopped) return; stopped=true; const d=Math.abs(pos-0.5); const p=d<=0.02?20:Math.max(0,Math.round(20*(1-(d-0.02)/0.28))); total+=p; results.push(p); msg=`+${p}점`; setTimeout(()=>{ round++; stopped=false; t0=performance.now(); msg=''; if(round>=5){ cleanup(); endScreen(ctx,W,H,`${total}점`,C); done(total); } else requestAnimationFrame(loop); },700); };
+  act.onclick=stop; cv.onpointerdown=stop;
+  const un=keyHandler(cv,e=>{ if(e.type==='keydown'&&(e.code==='Space'||e.key==='Enter')){e.preventDefault();stop();} });
+  const cleanup=()=>{ act.onclick=null; cv.onpointerdown=null; un(); };
+  const loop=now=>{
+    if(!stopped) pos=(Math.sin((now-t0)*speed()*Math.PI)+1)/2;
+    ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H);
+    const y=H/2+10, x0=24, x1=W-24, L=x1-x0;
+    ctx.save(); ctx.translate(x0,y); ctx.lineCap='round';
+    ctx.strokeStyle=C.choco; ctx.lineWidth=12; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(L*0.82,0); ctx.stroke();
+    ctx.strokeStyle=C.bis; ctx.beginPath(); ctx.moveTo(L*0.82,0); ctx.lineTo(L,0); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle=C.red; ctx.setLineDash([4,4]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x0+L*0.5,y-30); ctx.lineTo(x0+L*0.5,y+30); ctx.stroke(); ctx.setLineDash([]);
+    const kx=x0+L*pos; ctx.fillStyle=C.ink; ctx.beginPath(); ctx.moveTo(kx,y+8); ctx.lineTo(kx-9,y-34); ctx.lineTo(kx+9,y-34); ctx.closePath(); ctx.fill();
+    hud(ctx,W,`${Math.min(round+1,5)}/5회 · ${total}점`,C);
+    ctx.fillStyle=C.ink2; ctx.font='12px '+css('--f-ui'); ctx.textAlign='left'; ctx.fillText(results.map(r=>r+'점').join('  '),10,H-12);
+    if(msg){ ctx.fillStyle=C.red; ctx.font='34px '+css('--f-hand'); ctx.textAlign='center'; ctx.fillText(msg,W/2,y+60); }
+    if(!stopped) requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+  // keep drawing during pause so result text shows
+  const pauseDraw=()=>{ if(round<5){ if(stopped) loop(performance.now()); requestAnimationFrame(pauseDraw); } }; requestAnimationFrame(pauseDraw);
+}
+function runTap(cv,ctx,W,H,act,done){
+  const C=colors(); const T=5000; let t0=null, n=0, shake=0;
+  const tap=()=>{ if(t0===null) t0=performance.now(); n++; shake=1; };
+  act.onclick=tap; cv.onpointerdown=tap;
+  const un=keyHandler(cv,e=>{ if(e.type==='keydown'&&(e.code==='Space'||e.key==='Enter')&&!e.repeat){e.preventDefault();tap();} });
+  const loop=now=>{
+    const el=t0===null?0:now-t0;
+    ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H);
+    shake*=0.82; const dx=(Math.random()-.5)*10*shake;
+    const bw=Math.min(150,W*0.45), bh=90, bx=W/2-bw/2+dx, by=H/2-bh/2+6;
+    ctx.fillStyle=C.red; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=C.pink; ctx.fillRect(bx,by+bh*0.62,bw,bh*0.2);
+    for(let i=0;i<4;i++) drawStick(ctx,bx+22+i*((bw-44)/3),by-26-(i%2)*6,0,C,40);
+    ctx.fillStyle=C.paper; ctx.font='600 15px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText('빼빼로',bx+bw/2,by+38);
+    hud(ctx,W,t0===null?'두드리면 시작해요':`${n}회 · ${Math.max(0,(T-el)/1000).toFixed(1)}초`,C);
+    if(el<T) requestAnimationFrame(loop); else { act.onclick=null; cv.onpointerdown=null; un(); endScreen(ctx,W,H,`${n}회`,C); done(n); }
+  };
+  requestAnimationFrame(loop);
+}
+function endScreen(ctx,W,H,txt,C){
+  ctx.fillStyle=C.paper; ctx.globalAlpha=.86; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+  ctx.fillStyle=C.red; ctx.font='52px '+css('--f-hand'); ctx.textAlign='center'; ctx.fillText(txt,W/2,H/2+12);
+  ctx.fillStyle=C.ink2; ctx.font='13px '+css('--f-ui'); ctx.fillText('종료',W/2,H/2+40);
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
