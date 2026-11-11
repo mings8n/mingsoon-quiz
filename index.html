@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>빼빼로데이 모의고사</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* Layout: a Korean 수능-style exam sheet on a desk — header band with 교시/영역, two-column question grid split by a hairline, red-pen grading on top. */
@@ -29,7 +26,7 @@
   --f-display:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-body:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-ui:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --f-hand:"Nanum Pen Script","Apple SD Gothic Neo",cursive;
+  --f-hand:var(--f-ui);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --desk:#121011;--paper:#1f1b1c;--ink:#efe8e6;--ink-2:#b2a8aa;--rule:#d8cfcf;--faint:#3a3335;
@@ -78,6 +75,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .stack{max-width:960px;margin:16px auto 0;display:grid;gap:28px}
 .sheet{width:100%;margin:0;background:var(--paper);border:1px solid var(--faint);box-shadow:0 1px 0 var(--faint),0 18px 40px -24px rgb(40 20 25 / .35);padding:28px clamp(16px,4vw,44px) 20px;position:relative}
 .head-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;font-family:var(--f-ui);font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.head-right{display:flex;align-items:center;gap:10px}
+.theme-tog{display:inline-flex;border:1.5px solid var(--rule);border-radius:99px;overflow:hidden;font-family:var(--f-ui)}
+.theme-tog button{border:0;background:transparent;color:var(--ink-2);font-size:12px;font-weight:600;padding:3px 10px}
+.theme-tog button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .form-type{border:1.5px solid var(--rule);padding:2px 10px;font-weight:600;color:var(--ink);font-family:var(--f-display)}
 .head-title{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;border-top:3px double var(--rule);border-bottom:1.5px solid var(--rule);margin-top:8px;padding:14px 0}
 .period{font-family:var(--f-display);font-weight:700;font-size:15px;border:1.5px solid var(--rule);border-radius:99px;padding:4px 14px;justify-self:start;white-space:nowrap}
@@ -96,9 +97,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .idbox i:first-child{border-left:0}
 .scorebox{margin-left:auto;display:flex;align-items:center;gap:10px}
 .scorebox .lbl{font-weight:600}
-.score{font-family:var(--f-hand);color:var(--red);font-size:62px;line-height:.8;position:relative;padding:4px 14px 0}
+.score{font-family:var(--f-ui);font-weight:800;color:var(--red);font-size:40px;line-height:1;position:relative;padding:6px 14px 2px;font-variant-numeric:tabular-nums}
 .score::after{content:"";position:absolute;inset:-6px -2px -10px -4px;border:3px solid var(--red);border-radius:50% 46% 52% 44%;transform:rotate(-6deg)}
-.score small{font-size:26px;margin-left:2px}
+.score small{font-size:18px;font-weight:600;margin-left:2px}
 .status{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);padding:6px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .status b{color:var(--red);font-weight:600}
 .notice{font-family:var(--f-ui);font-size:13px;color:var(--ink-2);border:1px dashed var(--faint);padding:8px 12px;margin-top:10px}
@@ -214,7 +215,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sa{margin:12px 0 0 30px;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
 .sa-line{display:flex;align-items:flex-end;gap:10px;border-bottom:1.5px solid var(--rule);padding-bottom:2px}
 .sa-lbl{font-family:var(--f-ui);font-weight:600;font-size:14px;padding-bottom:6px}
-.sa-in{flex:1;min-width:0;border:0;background:transparent;font-family:var(--f-hand);font-size:28px;line-height:1.2;padding:2px 0;color:var(--ink)}
+.sa-in{flex:1;min-width:0;border:0;background:transparent;font-family:var(--f-ui);font-weight:500;font-size:18px;line-height:1.4;padding:6px 0 4px;color:var(--ink)}
 .sa-in:disabled{opacity:1}
 .sa-in::placeholder{font-family:var(--f-ui);font-size:14px;color:var(--ink-2);opacity:.7}
 .sa-stat{font-family:var(--f-ui);font-size:14px;padding-bottom:6px}
@@ -321,6 +322,15 @@ const firebaseConfig = {
   messagingSenderId: "871541112949",
   appId: "1:871541112949:web:18d6aff94f798572bdb83c",
 };
+
+/* ---------------- 테마 (일반 / 나이트) ---------------- */
+function curTheme(){ const t=document.documentElement.dataset.theme; if(t==='light'||t==='dark') return t; try{ return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; }catch(e){ return 'light'; } }
+function applyTheme(t){ if(t==='light'||t==='dark') document.documentElement.dataset.theme=t; }
+applyTheme(ls.get('pp-theme'));
+function themeTog(){ const t=curTheme(); return `<span class="theme-tog" role="group" aria-label="시험지 테마"><button type="button" data-theme-set="light" aria-pressed="${t==='light'}">일반</button><button type="button" data-theme-set="dark" aria-pressed="${t==='dark'}">나이트</button></span>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-theme-set]'); if(!b) return; const t=b.dataset.themeSet; applyTheme(t); ls.set('pp-theme',t);
+  document.querySelectorAll('[data-theme-set]').forEach(x=>x.setAttribute('aria-pressed', String(x.dataset.themeSet===t)));
+  document.querySelectorAll('#sheet .game').forEach(g=>g._idle&&g._idle()); });
 
 /* ---------------- boot ---------------- */
 function normQuiz(d){
@@ -549,7 +559,13 @@ async function saveSheetImage(btn){
     const oi=src.querySelectorAll('input'), ci=clone.querySelectorAll('input');
     oi.forEach((el,i)=>{ if(ci[i]){ ci[i].setAttribute('value',el.value); ci[i].value=el.value; } });
     clone.querySelectorAll('.reveal').forEach(e=>e.classList.remove('reveal'));
-    clone.querySelectorAll('.login,.save-row,.viewing,.linkbtn,canvas,.game-foot').forEach(e=>e.remove());
+    clone.querySelectorAll('.game').forEach(gb=>{
+      const d=document.createElement('div'); d.className='game-res';
+      const best=gb.dataset.best;
+      d.innerHTML=`${esc(gb.dataset.gname)} · 목표 <b>${esc(gb.dataset.gtarget)}</b> · ${gb.dataset.test?'시험 플레이':`기록 <b>${best!==undefined?esc(best+gb.dataset.unit):'없음'}</b>`}`;
+      gb.replaceWith(d);
+    });
+    clone.querySelectorAll('.login,.save-row,.viewing,.linkbtn,canvas,.theme-tog').forEach(e=>e.remove());
     wrap=document.createElement('div'); wrap.className='capture force-wide';
     wrap.appendChild(clone); document.body.appendChild(wrap);
     try{ await document.fonts.ready; }catch(e){}
@@ -670,7 +686,7 @@ function header(){
   const nickDisabled = hostView || ent || ph!=='open' && ph!=='draft' ? 'disabled' : '';
   const scoreHtml = ent && ent.score!==undefined ? `<div class="scorebox"><span class="lbl">점수</span><span class="score" style="--n:${q.questions.length}">${ent.score}<small>/${S.results.total}</small></span></div>` : '';
   return `<header>
-    <div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div>
+    <div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="head-right">${themeTog()}<span class="form-type">홀수형</span></span></div>
     <div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">${esc(q?.title||'빼빼로 영역')}</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div>
     <div class="head-meta">
       <label class="field"><span>성명</span><input id="nick" maxlength="20" placeholder="닉네임" value="${esc(nickVal)}" ${nickDisabled} autocomplete="off"></label>
@@ -748,12 +764,18 @@ function renderSheetInner(){
   bindHeader();
   S.reveal=false;
 }
-function header0(){ return `<header><div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="form-type">홀수형</span></div><div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">빼빼로 영역</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div></header>`; }
+function header0(){ return `<header><div class="head-top"><span>2026학년도 빼빼로데이 특별 모의평가 문제지</span><span class="head-right">${themeTog()}<span class="form-type">홀수형</span></span></div><div class="head-title"><span class="period">제 1 교시</span><h1 class="subject">빼빼로 영역</h1><span class="sticks" aria-hidden="true"><i class="stick"></i><i class="stick"></i></span></div></header>`; }
 function footer(n=1,last=true){ return (last?loginBox():'')+`<div class="foot"><span>이 문제지에 관한 저작권은 밍쑨이에게 있습니다.</span><span class="pageno">${n}</span><span>11월 11일 시행</span></div>`; }
 
+function canAnswerNow(){ return !S.isHost && S.quiz?.phase==='open' && !!S.nick.trim() && !(S.results?.entries && S.viewPid); }
+function syncAnswerable(){
+  const ok=canAnswerNow();
+  document.querySelectorAll('#sheet [data-ans]').forEach(el=>{ el.disabled=!ok; if(el.classList.contains('sa-in')) el.placeholder= ok?'여기에 답을 쓰세요':''; });
+  document.querySelectorAll('#sheet .game').forEach(b=>b._sync&&b._sync());
+}
 function bindHeader(){
   const n=$('#nick'); if(!n||n.disabled) return;
-  n.addEventListener('input',()=>{ const had=!!S.nick; S.nick=n.value.trim(); ls.set('pp-nick',S.nick); if(had!==!!S.nick) render(); else statusUpdate(); });
+  n.addEventListener('input',()=>{ S.nick=n.value.trim(); ls.set('pp-nick',S.nick); statusUpdate(); syncAnswerable(); });
   n.addEventListener('change',()=>{ if(S.quiz?.phase==='open' && S.nick){ pushAnswers(); } });
 
 }
@@ -799,7 +821,7 @@ function questionEl(q,i){
   else if(host || (graded && S.viewPid==='__key')){ ans={}; gm={}; }
   else if(graded && !r.entries?.[S.me]){ ans={}; gm={}; }
   else { ans=S.ans; gm=S.gm; }
-  const canAnswer = !host && ph==='open' && !!S.nick.trim();
+  const canAnswer = canAnswerNow();
   // stats for host
   let counts=null;
   if(host && ph!=='draft'){ counts=[0,0,0,0,0]; const src=r?.entries||mergedEntries(); Object.values(src).forEach(e=>{ const a=e.ans?.[q.id]; if(a!==undefined) counts[a]++; }); }
@@ -813,8 +835,8 @@ function questionEl(q,i){
     q.options.forEach((o,k)=>{
       const li=document.createElement('li');
       const isKey = key && key[q.id]===k && (graded || host);
-      li.innerHTML=`<button class="opt ${ans[q.id]===k?'on':''} ${isKey?'key':''}" ${canAnswer?'':'disabled'} aria-pressed="${ans[q.id]===k}"><span class="circ">${NUMS[k]}</span><span class="opt-txt">${q.optImgs?.[k] ? (S.images[q.optImgs[k]] ? `<img class="opt-img" src="${S.images[q.optImgs[k]]}" alt="${k+1}번 보기 사진">` : '<span class="opt-wait">사진 불러오는 중…</span>') : ''}${o?`<span>${esc(o)}</span>`:''}</span>${counts?`<span class="cnt">${counts[k]}명</span>`:''}</button>`;
-      li.firstElementChild.onclick=()=>{ if(!canAnswer) return; S.ans[q.id]=k; ol.querySelectorAll('.opt').forEach((b,j)=>{b.classList.toggle('on',j===k);b.setAttribute('aria-pressed',j===k);}); pushAnswers(); };
+      li.innerHTML=`<button class="opt ${ans[q.id]===k?'on':''} ${isKey?'key':''}" ${!host && ph==='open' && !ent ?'data-ans':''} ${canAnswer?'':'disabled'} aria-pressed="${ans[q.id]===k}"><span class="circ">${NUMS[k]}</span><span class="opt-txt">${q.optImgs?.[k] ? (S.images[q.optImgs[k]] ? `<img class="opt-img" src="${S.images[q.optImgs[k]]}" alt="${k+1}번 보기 사진">` : '<span class="opt-wait">사진 불러오는 중…</span>') : ''}${o?`<span>${esc(o)}</span>`:''}</span>${counts?`<span class="cnt">${counts[k]}명</span>`:''}</button>`;
+      li.firstElementChild.onclick=()=>{ if(!canAnswerNow()) return; S.ans[q.id]=k; ol.querySelectorAll('.opt').forEach((b,j)=>{b.classList.toggle('on',j===k);b.setAttribute('aria-pressed',j===k);}); pushAnswers(); };
       ol.appendChild(li);
     });
     el.appendChild(ol);
@@ -829,9 +851,9 @@ function questionEl(q,i){
       wrap.innerHTML=`<div class="sa-line"><span class="sa-lbl">답</span><span class="sa-stat">응답 ${n}명 · 정답 ${okN}명</span></div>`;
     } else {
       const val=String(ans[q.id]??'');
-      wrap.innerHTML=`<label class="sa-line"><span class="sa-lbl">답</span><input class="sa-in" id="sa-${q.id}" maxlength="100" autocomplete="off" placeholder="${canAnswer?'여기에 답을 쓰세요':''}" ${canAnswer?'':'disabled'}></label>`;
+      wrap.innerHTML=`<label class="sa-line"><span class="sa-lbl">답</span><input class="sa-in" id="sa-${q.id}" maxlength="100" autocomplete="off" ${!host && ph==='open' && !ent ?'data-ans':''} placeholder="${canAnswer?'여기에 답을 쓰세요':''}" ${canAnswer?'':'disabled'}></label>`;
       const inp=wrap.querySelector('input'); inp.value=val;
-      inp.addEventListener('input',()=>{ if(!canAnswer) return; S.ans[q.id]=inp.value.slice(0,100); pushAnswers(); });
+      inp.addEventListener('input',()=>{ if(!canAnswerNow()) return; S.ans[q.id]=inp.value.slice(0,100); pushAnswers(); });
     }
     if(showKey && kws.length) wrap.insertAdjacentHTML('beforeend',`<div class="sa-key">정답 단어: ${kws.map(k=>`<b>${esc(k)}</b>`).join(', ')} <span>(이 단어가 들어가면 정답)</span></div>`);
     el.appendChild(wrap);
@@ -845,8 +867,8 @@ function questionEl(q,i){
       el.appendChild(d);
     } else {
       el.appendChild(gameBox(q, {
-        best, playable: host || canAnswer, test: host,
-        lockedMsg: !S.nick.trim() ? '닉네임을 적으면 플레이할 수 있어요' : '지금은 플레이할 수 없어요',
+        best, playable: host ? true : ()=>canAnswerNow(), test: host,
+        lockedMsg: ()=> !S.nick.trim() ? '닉네임을 적으면 플레이할 수 있어요' : '지금은 플레이할 수 없어요',
         onScore: sc => { if(host) return; if(best===undefined || sc>best){ S.gm[q.id]=sc; pushAnswers(); } }
       }));
     }
@@ -931,26 +953,31 @@ function bindEditor(){
 function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function gameBox(q,opt){
   const g=GAMES[q.game]||GAMES.catch;
+  const playable=()=> typeof opt.playable==='function' ? opt.playable() : !!opt.playable;
+  const lockedMsg=()=> typeof opt.lockedMsg==='function' ? opt.lockedMsg() : (opt.lockedMsg||'');
   const box=document.createElement('div'); box.className='game';
+  box.dataset.gname=g.name; box.dataset.gtarget=q.target+g.unit; box.dataset.unit=g.unit; if(opt.best!==undefined) box.dataset.best=opt.best; if(opt.test) box.dataset.test='1';
   box.innerHTML=`<div class="game-head"><span><b>${g.name}</b> · ${esc(g.desc)}</span><span>목표 <b>${q.target}${g.unit}</b></span></div>
     <canvas tabindex="0" aria-label="${g.name} 게임 화면"></canvas>
-    <div class="game-foot"><button class="gbtn">${opt.playable?'게임 시작':'잠김'}</button><button class="gbtn ghost act" hidden>${q.game==='timing'?'멈춰! (스페이스)':'두드리기 (스페이스)'}</button><span class="rec"></span></div>`;
+    <div class="game-foot"><button class="gbtn">${playable()?'게임 시작':'잠김'}</button><button class="gbtn ghost act" hidden>${q.game==='timing'?'멈춰! (스페이스)':'두드리기 (스페이스)'}</button><span class="rec"></span></div>`;
   const cv=box.querySelector('canvas'), start=box.querySelector('.gbtn'), act=box.querySelector('.act'), rec=box.querySelector('.rec');
   let best=opt.best;
-  const showRec=()=>{ rec.innerHTML = opt.test ? '감독관 시험 플레이 · 기록은 저장되지 않아요' : !opt.playable ? esc(opt.lockedMsg) : best!==undefined ? `내 최고 기록 <b>${best}${g.unit}</b> ${best>=q.target?'· 목표 달성':'· 다시 도전할 수 있어요'}` : '여러 번 도전할 수 있고, 최고 기록이 제출돼요.'; };
+  const showRec=()=>{ rec.innerHTML = opt.test ? '감독관 시험 플레이 · 기록은 저장되지 않아요' : !playable() ? esc(lockedMsg()) : best!==undefined ? `내 최고 기록 <b>${best}${g.unit}</b> ${best>=q.target?'· 목표 달성':'· 다시 도전할 수 있어요'}` : '여러 번 도전할 수 있고, 최고 기록이 제출돼요.'; };
   showRec();
-  start.disabled=!opt.playable;
+  start.disabled=!playable();
+  box._sync=()=>{ if(S.gameRunning) return; const ok=playable(); start.disabled=!ok; if(start.textContent==='잠김'||start.textContent==='게임 시작') start.textContent=ok?'게임 시작':'잠김'; showRec(); };
   let ctx, W, H;
   const fit=()=>{ const r=cv.getBoundingClientRect(); const d=window.devicePixelRatio||1; W=r.width||300; H=r.height||210; cv.width=W*d; cv.height=H*d; ctx=cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); };
-  const idle=()=>{ fit(); const C=colors(); ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H); drawStick(ctx,W/2-30,H/2-40,0.4,C); drawStick(ctx,W/2+18,H/2-44,-0.2,C); ctx.fillStyle=C.ink2; ctx.font='13px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText(opt.playable?'게임 시작을 누르세요':'',W/2,H-18); };
+  const idle=()=>{ fit(); const C=colors(); ctx.fillStyle=C.paper; ctx.fillRect(0,0,W,H); drawStick(ctx,W/2-30,H/2-40,0.4,C); drawStick(ctx,W/2+18,H/2-44,-0.2,C); ctx.fillStyle=C.ink2; ctx.font='13px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText(playable()?'게임 시작을 누르세요':'',W/2,H-18); };
   requestAnimationFrame(idle);
+  box._idle=()=>{ if(!S.gameRunning) idle(); };
   start.onclick=()=>{
     if(S.gameRunning) return; S.gameRunning=true; start.disabled=true; fit(); cv.focus();
     const runner={catch:runCatch,timing:runTiming,tap:runTap}[q.game]||runCatch;
     if(q.game!=='catch'){ act.hidden=false; }
     runner(cv,ctx,W,H,act,score=>{
       S.gameRunning=false; start.disabled=false; start.textContent='다시 하기'; act.hidden=true;
-      if(!opt.test && (best===undefined||score>best)) best=score;
+      if(!opt.test && (best===undefined||score>best)){ best=score; box.dataset.best=best; }
       opt.onScore && opt.onScore(score);
       rec.innerHTML = `이번 기록 <b>${score}${g.unit}</b> · ` + (opt.test?'시험 플레이':'최고 '+best+g.unit);
       setTimeout(()=>{ if(S.pendingRender){S.pendingRender=false; render();} else showRec(); },1800);
@@ -1007,7 +1034,7 @@ function runTiming(cv,ctx,W,H,act,done){
     const kx=x0+L*pos; ctx.fillStyle=C.ink; ctx.beginPath(); ctx.moveTo(kx,y+8); ctx.lineTo(kx-9,y-34); ctx.lineTo(kx+9,y-34); ctx.closePath(); ctx.fill();
     hud(ctx,W,`${Math.min(round+1,5)}/5회 · ${total}점`,C);
     ctx.fillStyle=C.ink2; ctx.font='12px '+css('--f-ui'); ctx.textAlign='left'; ctx.fillText(results.map(r=>r+'점').join('  '),10,H-12);
-    if(msg){ ctx.fillStyle=C.red; ctx.font='34px '+css('--f-hand'); ctx.textAlign='center'; ctx.fillText(msg,W/2,y+60); }
+    if(msg){ ctx.fillStyle=C.red; ctx.font='800 26px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText(msg,W/2,y+60); }
     if(!stopped) requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
@@ -1034,7 +1061,7 @@ function runTap(cv,ctx,W,H,act,done){
 }
 function endScreen(ctx,W,H,txt,C){
   ctx.fillStyle=C.paper; ctx.globalAlpha=.86; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
-  ctx.fillStyle=C.red; ctx.font='52px '+css('--f-hand'); ctx.textAlign='center'; ctx.fillText(txt,W/2,H/2+12);
+  ctx.fillStyle=C.red; ctx.font='800 40px '+css('--f-ui'); ctx.textAlign='center'; ctx.fillText(txt,W/2,H/2+12);
   ctx.fillStyle=C.ink2; ctx.font='13px '+css('--f-ui'); ctx.fillText('종료',W/2,H/2+40);
 }
 
